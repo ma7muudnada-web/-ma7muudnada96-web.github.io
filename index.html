@@ -172,6 +172,44 @@
     border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--text); padding: 10px; }
   .row2 { display: flex; gap: 8px; } .row2 .secondary { margin-top: 8px; }
 
+  /* ---- daily diary ---- */
+  .daybar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 16px; }
+  .daybar .nav { background: var(--soft); border: none; color: var(--text); width: 42px; height: 42px; border-radius: 10px; font-size: 20px; cursor: pointer; }
+  .daybar .nav:disabled { opacity: .35; cursor: default; }
+  .daybar .dlabel { flex: 1; text-align: center; }
+  .daybar .dlabel b { display: block; font-size: 17px; }
+  .daybar .dlabel span { font-size: 13px; color: var(--muted); }
+  .block { border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 14px; }
+  .block h2 { display: flex; justify-content: space-between; align-items: baseline; }
+  .block h2 small { font-size: 13px; font-weight: 600; color: var(--muted); }
+  .two { display: flex; gap: 10px; } .two .field { flex: 1; margin-bottom: 0; }
+  input[type=time] { padding-left: 12px; font-size: 18px; }
+  .sleep-out { margin-top: 10px; font-size: 15px; }
+  .sleep-out b { font-size: 17px; }
+  .meal { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .meal:last-child { border-bottom: none; }
+  .meal .mt { min-width: 52px; }
+  .meal .mt b { display: block; font-size: 14px; }
+  .meal .mt span { font-size: 12px; color: var(--muted); direction: ltr; display: inline-block; }
+  .meal .mw { flex: 1; font-size: 15px; line-height: 1.5; word-break: break-word; }
+  .meal .mk { font-size: 14px; font-weight: 700; white-space: nowrap; }
+  .meal .mk small { font-weight: 400; color: var(--muted); font-size: 11px; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .chip { background: var(--bg); border: 1px solid var(--line); color: var(--text); border-radius: 999px; padding: 6px 14px; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .chip.on { background: var(--btn); border-color: var(--btn); color: #fff; }
+  .mealform textarea { min-height: 64px; font: inherit; font-size: 16px; direction: rtl; text-align: right; margin-bottom: 10px; }
+  .totals { display: flex; justify-content: space-between; align-items: center; background: var(--soft); border-radius: 10px; padding: 10px 12px; margin-top: 10px; font-size: 14px; }
+  .totals b { font-size: 17px; }
+  .bar { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; margin-top: 8px; direction: rtl; }
+  .bar i { display: block; height: 100%; background: var(--ok); border-radius: 4px; transition: width .3s; }
+  .bar i.over { background: var(--warn); }
+  .muted { color: var(--muted); font-size: 13px; }
+  .days { list-style: none; margin: 0; padding: 0; }
+  .days li { display: flex; justify-content: space-between; gap: 10px; padding: 11px 2px; border-bottom: 1px solid var(--line); cursor: pointer; font-size: 14px; }
+  .days li span:first-child { font-weight: 600; }
+  .days li span:last-child { color: var(--muted); }
+  .tab { font-size: 11px; }
+
   @media (max-width: 520px) {
     body { padding: 0 0 90px; background: var(--card); }
     .card { max-width: none; min-height: 100vh; border: none; border-radius: 0; padding: 22px 18px 32px; }
@@ -248,6 +286,77 @@
       تصنيف منظمة الصحة العالمية للكبار (18 سنة فأكثر): أقل من 18.5 نحافة، من 18.5 لأقل من 25 طبيعي، من 25 لأقل من 30 زيادة وزن، 30 فأكثر سمنة.
       المؤشر تقدير عام ولا يفرّق بين العضلات والدهون، ولا يُغني عن رأي الطبيب.
     </p>
+  </section>
+
+  <!-- Daily diary -->
+  <section class="view" id="v-day">
+    <h1>يومي</h1>
+    <p class="sub">نومك وأكلك كل يوم. بيتحفظ لوحده أول بأول.</p>
+
+    <div class="daybar">
+      <button class="nav" type="button" id="dayPrev" aria-label="اليوم اللي قبله">›</button>
+      <div class="dlabel"><b id="dayName"></b><span id="dayDate"></span></div>
+      <button class="nav" type="button" id="dayNext" aria-label="اليوم اللي بعده">‹</button>
+    </div>
+
+    <div class="block">
+      <h2>النوم</h2>
+      <div class="two">
+        <div class="field">
+          <label for="slp">نمت الساعة</label>
+          <input id="slp" type="time">
+        </div>
+        <div class="field">
+          <label for="wak">صحيت الساعة</label>
+          <input id="wak" type="time">
+        </div>
+      </div>
+      <div class="sleep-out" id="sleepOut"></div>
+    </div>
+
+    <div class="block">
+      <h2>الأكل <small id="mealCount"></small></h2>
+      <div id="meals"></div>
+      <div class="totals" id="totalsBox" style="display:none">
+        <div>
+          <div>إجمالي السعرات: <b id="kTotal"></b></div>
+          <div class="muted" id="kTarget"></div>
+        </div>
+      </div>
+      <div class="bar" id="kBarWrap" style="display:none"><i id="kBar"></i></div>
+      <div class="muted" id="kNote" style="margin-top:6px"></div>
+
+      <details class="box mealform" id="mealBox">
+        <summary>+ أضف أكلة</summary>
+        <div class="chips" id="mealType" style="margin-top:12px">
+          <button type="button" class="chip" data-v="فطار">فطار</button>
+          <button type="button" class="chip" data-v="غدا">غدا</button>
+          <button type="button" class="chip" data-v="عشا">عشا</button>
+          <button type="button" class="chip" data-v="سناك">سناك</button>
+        </div>
+        <textarea id="mealWhat" placeholder="أكلت إيه؟ مثلاً: 2 بيض، عيش بلدي، فول"></textarea>
+        <div class="two">
+          <div class="field"><label for="mealTime">الساعة</label><input id="mealTime" type="time"></div>
+          <div class="field"><label for="mealK">السعرات (لو تعرفها)</label>
+            <div class="inwrap"><input id="mealK" type="number" inputmode="numeric" step="1" placeholder="اختياري"><span class="unit">سعر</span></div></div>
+        </div>
+        <button class="primary" type="button" id="mealAdd" style="margin-top:12px">إضافة</button>
+        <div class="err" id="mealErr"></div>
+      </details>
+    </div>
+
+    <div class="block">
+      <h2>ملاحظات</h2>
+      <textarea id="dayNote" placeholder="أي حاجة تحب تفتكرها عن اليوم ده: رياضة، مية، مزاجك..." style="direction:rtl;text-align:right;font:inherit;font-size:16px"></textarea>
+    </div>
+
+    <button class="secondary" type="button" id="copyDay">نسخ ملخص اليوم</button>
+    <div class="saved" id="copyDayMsg"></div>
+
+    <details class="box" id="pastBox">
+      <summary>الأيام اللي فاتت</summary>
+      <ul class="days" id="pastDays" style="margin-top:8px"></ul>
+    </details>
   </section>
 
   <!-- Log (phase 2) -->
@@ -342,6 +451,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18a8 8 0 1 1 16 0"/><path d="M12 18l4-6"/></svg>
       الرئيسية
     </button>
+    <button class="tab" type="button" data-tab="day">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></svg>
+      يومي
+    </button>
     <button class="tab" type="button" data-tab="log">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"/><path d="M5 15l4-4 3 3 6-6"/></svg>
       سجلي
@@ -373,6 +486,7 @@
     if (name === 'profile') fillProfileForm();
     if (name === 'home') renderHome();
     if (name === 'log') renderLog();
+    if (name === 'day') renderDay();
     window.scrollTo(0, 0);
   }
   document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => showTab(t.dataset.tab)));
@@ -580,8 +694,171 @@
     $('offNote').textContent = offNote;
   }
 
+  // ---------- daily diary ----------
+  let memDays = null;
+  const getDays = () => { const d = memDays || store.get('bmi.days'); return d && typeof d === 'object' && !Array.isArray(d) ? d : {}; };
+  const setDays = d => { if (!store.set('bmi.days', d)) memDays = d; };
+  let curDay = todayISO();
+  const DAY_NAMES = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+  const shiftDay = (iso, n) => { const t = new Date(iso + 'T12:00:00'); t.setDate(t.getDate() + n); return `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`; };
+  const dayTitle = iso => iso === todayISO() ? 'النهارده' : iso === shiftDay(todayISO(), -1) ? 'امبارح' : DAY_NAMES[new Date(iso + 'T12:00:00').getDay()];
+  const dayRec = iso => { const r = getDays()[iso] || {}; return { sleep: r.sleep || '', wake: r.wake || '', meals: Array.isArray(r.meals) ? r.meals : [], note: r.note || '' }; };
+  const isEmptyRec = r => !r.sleep && !r.wake && !r.meals.length && !r.note;
+  function saveRec(iso, rec) {
+    const all = getDays();
+    if (isEmptyRec(rec)) delete all[iso]; else all[iso] = rec;
+    setDays(all);
+  }
+  function sleepMinutes(r) {
+    if (!r.sleep || !r.wake) return null;
+    const toM = s => { const [h, m] = s.split(':').map(Number); return h * 60 + m; };
+    let d = toM(r.wake) - toM(r.sleep); if (d <= 0) d += 1440; return d;
+  }
+  // Arabic counting: 1 = word, 2 = dual, 3-10 = plural, 11+ = singular
+  const count = (n, one, two, few) => n === 1 ? one : n === 2 ? two : n >= 3 && n <= 10 ? `${n} ${few}` : `${n} ${one}`;
+  const hrs = n => count(n, 'ساعة', 'ساعتين', 'ساعات');
+  const mns = n => count(n, 'دقيقة', 'دقيقتين', 'دقايق');
+  const mealsN = n => count(n, 'أكلة', 'أكلتين', 'أكلات');
+  const hm = mins => {
+    const h = Math.floor(mins / 60), m = mins % 60;
+    if (!h) return mns(m);
+    return m ? `${hrs(h)} و${mns(m)}` : hrs(h);
+  };
+  const hmShort = mins => `${Math.floor(mins / 60)}:${pad(mins % 60)}`;
+
+  // Daily calorie need from profile + latest known weight
+  function dailyNeed() {
+    const p = profile || memProfile; if (!p || p.a < 18) return null;
+    const log = getLog();
+    const w = log.length ? log[log.length - 1].w : store.get('bmi.lastWeight');
+    if (!(w > 0)) return null;
+    const tdee = (10 * w + 6.25 * p.h - 5 * p.a + (p.sex === 'm' ? 5 : -161)) * p.act;
+    const bmi = w / (p.h / 100) ** 2;
+    if (bmi >= 25) return { target: tdee - 500, label: 'هدف التخسيس' };
+    if (bmi < 18.5) return { target: tdee + 500, label: 'هدف الزيادة' };
+    return { target: tdee, label: 'احتياجك' };
+  }
+
+  let mealType = 'فطار';
+  document.querySelectorAll('#mealType .chip').forEach(c => c.addEventListener('click', () => {
+    mealType = c.dataset.v;
+    document.querySelectorAll('#mealType .chip').forEach(x => x.classList.toggle('on', x === c));
+  }));
+  function guessMealType() {
+    const h = new Date().getHours();
+    return h < 11 ? 'فطار' : h < 17 ? 'غدا' : h < 21 ? 'عشا' : 'سناك';
+  }
+  function resetMealForm() {
+    mealType = guessMealType();
+    document.querySelectorAll('#mealType .chip').forEach(x => x.classList.toggle('on', x.dataset.v === mealType));
+    $('mealWhat').value = ''; $('mealK').value = ''; $('mealErr').textContent = '';
+    const t = new Date(); $('mealTime').value = curDay === todayISO() ? `${pad(t.getHours())}:${pad(t.getMinutes())}` : '';
+  }
+
+  function renderDay() {
+    const r = dayRec(curDay);
+    $('dayName').textContent = dayTitle(curDay);
+    $('dayDate').textContent = dShow(curDay);
+    $('dayNext').disabled = curDay >= todayISO();
+    $('slp').value = r.sleep; $('wak').value = r.wake; $('dayNote').value = r.note;
+    const sm = sleepMinutes(r);
+    $('sleepOut').innerHTML = sm === null ? '<span class="muted">اكتب الساعتين وهحسبلك مدة النوم.</span>' : `نمت <b>${hm(sm)}</b>`;
+
+    const box = $('meals'); box.innerHTML = '';
+    const meals = r.meals.slice().sort((a, b) => (a.t || '99') < (b.t || '99') ? -1 : 1);
+    $('mealCount').textContent = meals.length ? mealsN(meals.length) : '';
+    if (!meals.length) box.innerHTML = '<div class="muted" style="padding:4px 0 10px">لسه ما سجلتش أكل اليوم ده.</div>';
+    meals.forEach(m => {
+      const row = document.createElement('div'); row.className = 'meal';
+      row.innerHTML = `<div class="mt"><b></b><span></span></div><div class="mw"></div>
+        <div class="mk"></div><button class="del" type="button" aria-label="مسح">×</button>`;
+      row.querySelector('.mt b').textContent = m.type;
+      row.querySelector('.mt span').textContent = m.t || '';
+      row.querySelector('.mw').textContent = m.what;
+      row.querySelector('.mk').innerHTML = m.k ? `${fmt0(m.k)} <small>سعر</small>` : '';
+      const del = row.querySelector('.del'); let tm;
+      del.addEventListener('click', () => {
+        if (!del.classList.contains('armed')) {
+          del.classList.add('armed'); del.textContent = 'مسح؟';
+          tm = setTimeout(() => { del.classList.remove('armed'); del.textContent = '×'; }, 3000);
+        } else {
+          clearTimeout(tm);
+          const rec = dayRec(curDay); rec.meals = rec.meals.filter(x => x.id !== m.id); saveRec(curDay, rec); renderDay();
+        }
+      });
+      box.appendChild(row);
+    });
+
+    const withK = meals.filter(m => m.k > 0), total = withK.reduce((s, m) => s + m.k, 0), missing = meals.length - withK.length;
+    const need = dailyNeed();
+    $('totalsBox').style.display = withK.length ? '' : 'none';
+    $('kTotal').textContent = fmt0(total) + ' سعر';
+    $('kTarget').textContent = need ? `${need.label}: ${fmt0(need.target)} سعر · فاضل ${fmt0(Math.max(need.target - total, 0))}` : '';
+    $('kBarWrap').style.display = withK.length && need ? '' : 'none';
+    if (need) { const pct = total / need.target * 100; $('kBar').style.width = Math.min(pct, 100) + '%'; $('kBar').classList.toggle('over', pct > 100); }
+    $('kNote').textContent = missing && withK.length ? `فيه ${missing === 1 ? 'أكلة' : mealsN(missing)} من غير سعرات، فالإجمالي أقل من الحقيقي.` : '';
+    renderPastDays();
+  }
+
+  function renderPastDays() {
+    const all = getDays(), keys = Object.keys(all).filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k)).sort().reverse();
+    const ul = $('pastDays'); ul.innerHTML = '';
+    $('pastBox').style.display = keys.length ? '' : 'none';
+    keys.forEach(k => {
+      const r = dayRec(k), sm = sleepMinutes(r), kc = r.meals.reduce((s, m) => s + (m.k > 0 ? m.k : 0), 0);
+      const bits = [];
+      if (sm !== null) bits.push('نوم ' + hmShort(sm));
+      if (r.meals.length) bits.push(mealsN(r.meals.length));
+      if (kc) bits.push(fmt0(kc) + ' سعر');
+      if (!bits.length && r.note) bits.push('ملاحظة');
+      const li = document.createElement('li');
+      li.innerHTML = `<span>${dayTitle(k)} ${dShow(k)}</span><span>${bits.join(' · ')}</span>`;
+      li.addEventListener('click', () => { curDay = k; $('pastBox').open = false; renderDay(); window.scrollTo(0, 0); });
+      ul.appendChild(li);
+    });
+  }
+
+  $('dayPrev').addEventListener('click', () => { curDay = shiftDay(curDay, -1); resetMealForm(); renderDay(); });
+  $('dayNext').addEventListener('click', () => { if (curDay < todayISO()) { curDay = shiftDay(curDay, 1); resetMealForm(); renderDay(); } });
+  ['slp', 'wak'].forEach(id => $(id).addEventListener('change', () => {
+    const rec = dayRec(curDay); rec.sleep = $('slp').value; rec.wake = $('wak').value; saveRec(curDay, rec); renderDay();
+  }));
+  $('dayNote').addEventListener('input', () => { const rec = dayRec(curDay); rec.note = $('dayNote').value; saveRec(curDay, rec); });
+  $('dayNote').addEventListener('change', renderPastDays);
+  $('mealBox').addEventListener('toggle', () => { if ($('mealBox').open) resetMealForm(); });
+  $('mealAdd').addEventListener('click', () => {
+    const what = $('mealWhat').value.trim(), k = parseFloat($('mealK').value);
+    $('mealErr').textContent = '';
+    if (!what) { $('mealErr').textContent = 'اكتب أكلت إيه.'; return; }
+    if ($('mealK').value && !(k >= 0 && k <= 10000)) { $('mealErr').textContent = 'السعرات لازم تكون رقم صحيح.'; return; }
+    const rec = dayRec(curDay);
+    rec.meals.push({ id: Date.now().toString(36), type: mealType, t: $('mealTime').value, what, k: k > 0 ? Math.round(k) : 0 });
+    saveRec(curDay, rec);
+    if (document.activeElement) document.activeElement.blur();
+    $('mealBox').open = false;
+    renderDay();
+  });
+
+  $('copyDay').addEventListener('click', async () => {
+    const r = dayRec(curDay), sm = sleepMinutes(r), lines = [`يوم ${DAY_NAMES[new Date(curDay + 'T12:00:00').getDay()]} ${dShow(curDay)}`];
+    if (r.sleep || r.wake) lines.push(`النوم: نمت ${r.sleep || '؟'}، صحيت ${r.wake || '؟'}${sm !== null ? ` (${hm(sm)})` : ''}`);
+    if (r.meals.length) {
+      lines.push('الأكل:');
+      r.meals.slice().sort((a, b) => (a.t || '99') < (b.t || '99') ? -1 : 1)
+        .forEach(m => lines.push(`- ${m.type}${m.t ? ' ' + m.t : ''}: ${m.what}${m.k ? ` (${m.k} سعر)` : ''}`));
+      const kc = r.meals.reduce((s, m) => s + (m.k > 0 ? m.k : 0), 0), need = dailyNeed();
+      if (kc) lines.push(`إجمالي السعرات المسجلة: ${kc}${need ? ` من ${Math.round(need.target)}` : ''}`);
+    }
+    if (r.note) lines.push('ملاحظات: ' + r.note);
+    const txt = lines.join('\n');
+    let ok = false;
+    try { await navigator.clipboard.writeText(txt); ok = true; } catch (_) {}
+    $('copyDayMsg').textContent = ok ? 'اتنسخ ✓ تقدر تلزقه في أي مكان.' : 'ما قدرتش أنسخ. جرّب تاني.';
+    setTimeout(() => { $('copyDayMsg').textContent = ''; }, 3000);
+  });
+
   // ---------- backup ----------
-  function backupText() { return JSON.stringify({ app: 'bmi', v: 1, profile: profile || memProfile || null, log: getLog() }); }
+  function backupText() { return JSON.stringify({ app: 'bmi', v: 2, profile: profile || memProfile || null, log: getLog(), days: getDays() }); }
   $('backupBox').addEventListener('toggle', () => { if ($('backupBox').open) { $('bkMsg').textContent = ''; $('bkErr').textContent = ''; } });
   $('copyBk').addEventListener('click', async () => {
     const txt = backupText();
@@ -599,10 +876,27 @@
     if (!data || data.app !== 'bmi' || !Array.isArray(data.log)) { $('bkErr').textContent = 'الكود ده مش صحيح. اتأكد إنك لزقته كله.'; return; }
     const clean = data.log.filter(e => e && /^\d{4}-\d{2}-\d{2}$/.test(e.d) && e.w >= 10 && e.w <= 400).map(e => ({ d: e.d, w: Math.round(e.w * 10) / 10 }));
     setLog(clean);
+    let nDays = 0;
+    if (data.days && typeof data.days === 'object' && !Array.isArray(data.days)) {
+      const days = {};
+      Object.keys(data.days).forEach(k => {
+        const r = data.days[k];
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(k) || !r || typeof r !== 'object') return;
+        days[k] = {
+          sleep: /^\d{2}:\d{2}$/.test(r.sleep) ? r.sleep : '', wake: /^\d{2}:\d{2}$/.test(r.wake) ? r.wake : '',
+          note: typeof r.note === 'string' ? r.note.slice(0, 2000) : '',
+          meals: Array.isArray(r.meals) ? r.meals.filter(m => m && typeof m.what === 'string').map(m => ({
+            id: String(m.id || Math.random().toString(36).slice(2)), type: ['فطار', 'غدا', 'عشا', 'سناك'].includes(m.type) ? m.type : 'سناك',
+            t: /^\d{2}:\d{2}$/.test(m.t) ? m.t : '', what: m.what.slice(0, 500), k: m.k > 0 && m.k <= 10000 ? Math.round(m.k) : 0 })) : []
+        };
+        nDays++;
+      });
+      setDays(days);
+    }
     if (data.profile && data.profile.h && data.profile.a && data.profile.sex && data.profile.act) {
       if (store.set('bmi.profile', data.profile)) profile = data.profile; else memProfile = data.profile;
     }
-    $('bkMsg').textContent = `اترجع ${clean.length} تسجيل ✓`;
+    $('bkMsg').textContent = `اترجع ${clean.length} وزن${nDays ? ` و${nDays} يوم` : ''} ✓`;
     renderLog();
   });
 
