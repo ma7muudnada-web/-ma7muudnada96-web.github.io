@@ -1,5 +1,5 @@
 // Keeps the app working without internet after the first open
-const CACHE = 'bmi-v4';
+const CACHE = 'bmi-v6';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
@@ -16,8 +16,11 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
+  // Own files skip the browser's 10-minute HTTP cache so updates show right away
+  const sameOrigin = new URL(e.request.url).origin === self.location.origin;
+  const net = sameOrigin ? fetch(e.request.url, { cache: 'no-cache' }) : fetch(e.request);
   e.respondWith(
-    fetch(e.request)
+    net
       .then(res => {
         const copy = res.clone();
         caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});

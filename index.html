@@ -210,6 +210,17 @@
   .days li span:last-child { color: var(--muted); }
   .tab { font-size: 11px; }
 
+  /* ---- daily advice ---- */
+  .groups { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 12px; }
+  .grp { border: 1px dashed var(--line); background: transparent; color: var(--muted); border-radius: 999px; padding: 5px 12px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .grp.on { border-style: solid; border-color: var(--ok); background: var(--okbg); color: var(--ok); }
+  .grp.on::before { content: '✓ '; }
+  .tips { list-style: none; margin: 0; padding: 0; }
+  .tips li { display: flex; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 15px; line-height: 1.6; }
+  .tips li:last-child { border-bottom: none; }
+  .tips .ic { font-size: 18px; line-height: 1.4; }
+  .tips small { display: block; color: var(--muted); font-size: 13px; }
+
   @media (max-width: 520px) {
     body { padding: 0 0 90px; background: var(--card); }
     .card { max-width: none; min-height: 100vh; border: none; border-radius: 0; padding: 22px 18px 32px; }
@@ -343,6 +354,14 @@
         <button class="primary" type="button" id="mealAdd" style="margin-top:12px">إضافة</button>
         <div class="err" id="mealErr"></div>
       </details>
+    </div>
+
+    <div class="block" id="adviceBlock">
+      <h2>نصايح اليوم</h2>
+      <div class="muted">المجموعات اللي في أكلك (دوس على أي واحدة لو التطبيق غلط فيها):</div>
+      <div class="groups" id="groups"></div>
+      <ul class="tips" id="tips"></ul>
+      <p class="note" style="margin-top:10px">نصايح عامة مبنية على إرشادات منظمة الصحة العالمية وMyPlate للأكل، وتوصيات النوم للكبار. مش بديل عن أخصائي تغذية أو دكتور.</p>
     </div>
 
     <div class="block">
@@ -702,8 +721,8 @@
   const DAY_NAMES = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
   const shiftDay = (iso, n) => { const t = new Date(iso + 'T12:00:00'); t.setDate(t.getDate() + n); return `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`; };
   const dayTitle = iso => iso === todayISO() ? 'النهارده' : iso === shiftDay(todayISO(), -1) ? 'امبارح' : DAY_NAMES[new Date(iso + 'T12:00:00').getDay()];
-  const dayRec = iso => { const r = getDays()[iso] || {}; return { sleep: r.sleep || '', wake: r.wake || '', meals: Array.isArray(r.meals) ? r.meals : [], note: r.note || '' }; };
-  const isEmptyRec = r => !r.sleep && !r.wake && !r.meals.length && !r.note;
+  const dayRec = iso => { const r = getDays()[iso] || {}; return { sleep: r.sleep || '', wake: r.wake || '', meals: Array.isArray(r.meals) ? r.meals : [], note: r.note || '', groups: r.groups && typeof r.groups === 'object' ? r.groups : {} }; };
+  const isEmptyRec = r => !r.sleep && !r.wake && !r.meals.length && !r.note && !Object.keys(r.groups || {}).length;
   function saveRec(iso, rec) {
     const all = getDays();
     if (isEmptyRec(rec)) delete all[iso]; else all[iso] = rec;
@@ -796,8 +815,84 @@
     $('kTarget').textContent = need ? `${need.label}: ${fmt0(need.target)} سعر · فاضل ${fmt0(Math.max(need.target - total, 0))}` : '';
     $('kBarWrap').style.display = withK.length && need ? '' : 'none';
     if (need) { const pct = total / need.target * 100; $('kBar').style.width = Math.min(pct, 100) + '%'; $('kBar').classList.toggle('over', pct > 100); }
-    $('kNote').textContent = missing && withK.length ? `فيه ${missing === 1 ? 'أكلة' : mealsN(missing)} من غير سعرات، فالإجمالي أقل من الحقيقي.` : '';
+    renderAdvice(r, sm, meals, withK.length ? total : null, need);
+    $('kNote').textContent = missing && withK.length ?`فيه ${missing === 1 ? 'أكلة' : mealsN(missing)} من غير سعرات، فالإجمالي أقل من الحقيقي.` : '';
     renderPastDays();
+  }
+
+  // ---------- daily advice ----------
+  const norm = s => s.replace(/[ً-ٰٟ]/g, '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/ـ/g, '');
+  const GROUPS = {
+    protein: { name: 'بروتين', words: ['بيض', 'بيضه', 'فراخ', 'فرخه', 'دجاج', 'لحم', 'لحمه', 'كبده', 'سمك', 'تونه', 'جمبري', 'سردين', 'فول', 'عدس', 'حمص', 'فاصوليا', 'لوبيا', 'طعميه', 'فلافل', 'كفته', 'برجر', 'سجق', 'بانيه', 'شاورما', 'ستيك', 'كباب', 'مكسرات', 'لوز', 'سوداني', 'بندق', 'كاجو', 'عين جمل', 'ديك رومي', 'سلمون', 'بروتين'],
+               tip: 'بيض، فول، عدس، فراخ، تونة، أو زبادي يوناني' },
+    veg:     { name: 'خضار', words: ['خضار', 'خضره', 'سلطه', 'طماطم', 'قوطه', 'خيار', 'جرجير', 'خس', 'فلفل', 'جزر', 'كوسه', 'باذنجان', 'بتنجان', 'ملوخيه', 'سبانخ', 'بامي', 'باميه', 'بسله', 'كرنب', 'قرنبيط', 'بروكلي', 'فتوش', 'تبوله', 'بنجر', 'كرفس', 'بقدونس', 'خبيزه', 'فاصوليا خضرا'],
+               tip: 'سلطة خضرا، خيار وطماطم، جرجير، كوسة، ملوخية أو سبانخ' },
+    fruit:   { name: 'فاكهة', words: ['فاكهه', 'تفاح', 'موز', 'برتقال', 'يوسفي', 'عنب', 'بطيخ', 'شمام', 'كنتالوب', 'فراوله', 'مانجا', 'مانجو', 'جوافه', 'رمان', 'كمثري', 'خوخ', 'مشمش', 'تمر', 'بلح', 'كيوي', 'اناناس', 'تين', 'افوكادو', 'برقوق', 'كريز'],
+               tip: 'تفاحة، موزة، برتقالة، جوافة، أو كام بلحة' },
+    dairy:   { name: 'ألبان', words: ['لبن', 'حليب', 'زبادي', 'رايب', 'جبنه', 'جبن', 'قريش', 'لبنه', 'شيدر', 'موتزاريلا'],
+               tip: 'كوباية لبن، زبادي، أو جبنة قريش' },
+    grains:  { name: 'نشويات', words: ['عيش', 'خبز', 'توست', 'رز', 'ارز', 'مكرونه', 'شوفان', 'بليله', 'كورن فليكس', 'بطاطس', 'بطاطا', 'فريك', 'برغل', 'فطير', 'كشري', 'سندوتش', 'ساندويتش', 'بسكوت', 'كرواسون', 'بيتزا', 'شعير', 'كينوا'],
+               tip: 'عيش سن أو شوفان أو رز بني، لأن الحبوب الكاملة أحسن' }
+  };
+  const GROUP_ORDER = ['protein', 'veg', 'fruit', 'dairy', 'grains'];
+  function detectGroups(meals) {
+    const found = {};
+    const text = norm(meals.map(m => m.what).join(' '));
+    const tokens = text.split(/[\s،,.\-+()\/\\]+/).filter(Boolean);
+    const variants = t => [t, t.replace(/^و/, ''), t.replace(/^ال/, ''), t.replace(/^وال/, ''), t.replace(/^بال/, ''), t.replace(/^و?بال/, '')];
+    GROUP_ORDER.forEach(g => {
+      found[g] = GROUPS[g].words.some(w => {
+        const nw = norm(w);
+        if (nw.includes(' ')) return text.includes(nw);
+        return tokens.some(t => variants(t).some(v => v.startsWith(nw) && v.length <= nw.length + 2));
+      });
+    });
+    return found;
+  }
+  function effectiveGroups(r) {
+    const auto = detectGroups(r.meals), ov = r.groups || {}, res = {};
+    GROUP_ORDER.forEach(g => { res[g] = typeof ov[g] === 'boolean' ? ov[g] : auto[g]; });
+    return res;
+  }
+  function renderAdvice(r, sm, meals, total, need) {
+    const box = $('groups'), tips = $('tips'); box.innerHTML = ''; tips.innerHTML = '';
+    const g = effectiveGroups(r);
+    GROUP_ORDER.forEach(k => {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'grp' + (g[k] ? ' on' : '');
+      b.textContent = GROUPS[k].name;
+      b.addEventListener('click', () => {
+        const rec = dayRec(curDay); rec.groups = Object.assign({}, rec.groups || {}); rec.groups[k] = !g[k];
+        saveRec(curDay, rec); renderDay();
+      });
+      box.appendChild(b);
+    });
+    const add = (ic, html) => { const li = document.createElement('li'); li.innerHTML = `<span class="ic">${ic}</span><span>${html}</span>`; tips.appendChild(li); };
+    const p = profile || memProfile;
+    const isPast = curDay < todayISO(), late = new Date().getHours() >= 20;
+
+    // Food groups
+    if (!meals.length) add('🍽️', 'سجّل أكلك الأول، وأنا أقولك إيه اللي ناقصك.');
+    else {
+      const missing = GROUP_ORDER.filter(k => !g[k]);
+      if (!missing.length) add('✅', 'أكلك النهارده فيه كل المجموعات الخمسة. كويس جدًا.');
+      missing.forEach(k => add('➕', `<b>ناقصك ${GROUPS[k].name}.</b><small>جرّب: ${GROUPS[k].tip}</small>`));
+      if (!g.veg || !g.fruit) add('🥗', 'منظمة الصحة العالمية بتنصح بـ 400 جرام خضار وفاكهة على الأقل في اليوم، يعني حوالي 5 حصص، والبطاطس مش محسوبة منهم.');
+    }
+
+    // Calories
+    if (need && total !== null) {
+      const diff = total - need.target;
+      if (diff > 200) add('⚖️', `عديت ${need.label} بحوالي ${fmt0(diff)} سعر.`);
+      else if ((isPast || late) && total < need.target * 0.6) add('⚠️', 'السعرات اللي سجلتها أقل بكتير من احتياجك. لو ده فعلًا كل اللي أكلته، الأكل القليل جدًا مش صحي ومش بيساعد على تخسيس مستمر.');
+      else if (diff < 0) add('📊', `فاضلك حوالي ${fmt0(-diff)} سعر من ${need.label}.`);
+      else add('👌', `أكلك قريب من ${need.label}.`);
+    }
+
+    // Sleep (adult recommendation only)
+    if (sm !== null && p && p.a >= 18) {
+      if (sm < 420) add('😴', `<b>نمت ${hm(sm)} بس.</b><small>الكبار محتاجين 7 ساعات نوم أو أكتر كل ليلة. حاول تنام بدري شوية وفي معاد ثابت.</small>`);
+      else add('🌙', `نومك كويس (${hm(sm)}).`);
+    }
   }
 
   function renderPastDays() {
@@ -848,6 +943,8 @@
         .forEach(m => lines.push(`- ${m.type}${m.t ? ' ' + m.t : ''}: ${m.what}${m.k ? ` (${m.k} سعر)` : ''}`));
       const kc = r.meals.reduce((s, m) => s + (m.k > 0 ? m.k : 0), 0), need = dailyNeed();
       if (kc) lines.push(`إجمالي السعرات المسجلة: ${kc}${need ? ` من ${Math.round(need.target)}` : ''}`);
+      const g = effectiveGroups(r), miss = GROUP_ORDER.filter(k => !g[k]).map(k => GROUPS[k].name);
+      lines.push(miss.length ? `ناقصني: ${miss.join('، ')}` : 'أكلي فيه كل المجموعات');
     }
     if (r.note) lines.push('ملاحظات: ' + r.note);
     const txt = lines.join('\n');
@@ -887,7 +984,8 @@
           note: typeof r.note === 'string' ? r.note.slice(0, 2000) : '',
           meals: Array.isArray(r.meals) ? r.meals.filter(m => m && typeof m.what === 'string').map(m => ({
             id: String(m.id || Math.random().toString(36).slice(2)), type: ['فطار', 'غدا', 'عشا', 'سناك'].includes(m.type) ? m.type : 'سناك',
-            t: /^\d{2}:\d{2}$/.test(m.t) ? m.t : '', what: m.what.slice(0, 500), k: m.k > 0 && m.k <= 10000 ? Math.round(m.k) : 0 })) : []
+            t: /^\d{2}:\d{2}$/.test(m.t) ? m.t : '', what: m.what.slice(0, 500), k: m.k > 0 && m.k <= 10000 ? Math.round(m.k) : 0 })) : [],
+          groups: r.groups && typeof r.groups === 'object' ? Object.fromEntries(Object.entries(r.groups).filter(([g, v]) => GROUP_ORDER.includes(g) && typeof v === 'boolean')) : {}
         };
         nDays++;
       });
