@@ -3,8 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#1d2128" media="(prefers-color-scheme: dark)">
 <title>حاسبة الوزن الطبيعي</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -13,73 +11,93 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="حاسبة الوزن">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1d2128" media="(prefers-color-scheme: dark)">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #f6f7f9; --card: #ffffff; --text: #1d2330; --muted: #667085;
-    --line: #e3e6eb; --accent: #2f6fdf;
+    --line: #e3e6eb; --accent: #2f6fdf; --btn: #2f6fdf;
     --ok: #1f8a4c; --okbg: #e8f5ee;
     --warn: #b7791f; --warnbg: #fdf3e3;
     --bad: #c0392b; --badbg: #fbeaea;
     --info: #2f6fdf; --infobg: #eaf1fd;
+    --soft: #f1f3f6;
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --bg: #14171c; --card: #1d2128; --text: #e8eaee; --muted: #9aa3b2;
-      --line: #2e3440; --accent: #6b9cf0;
+      --line: #2e3440; --accent: #6b9cf0; --btn: #3a72dc;
       --ok: #5cc98a; --okbg: #1b3326;
       --warn: #e5b15a; --warnbg: #3a2e1a;
       --bad: #ef7d70; --badbg: #3d2220;
       --info: #6b9cf0; --infobg: #1c2a42;
+      --soft: #252a33;
     }
-    button { background: #3a72dc; }
   }
-  * { box-sizing: border-box; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html { -webkit-text-size-adjust: 100%; }
   body {
     margin: 0; font-family: "Cairo", system-ui, sans-serif;
     background: var(--bg); color: var(--text);
-    display: flex; justify-content: center; padding: 32px 16px;
+    display: flex; justify-content: center; padding: 32px 16px 110px;
   }
   .card {
     width: 100%; max-width: 440px; background: var(--card);
     border: 1px solid var(--line); border-radius: 14px; padding: 24px;
   }
   h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 17px; margin: 0 0 10px; }
   .sub { color: var(--muted); font-size: 14px; margin: 0 0 20px; }
   label { display: block; font-weight: 600; font-size: 15px; margin-bottom: 6px; }
   .field { margin-bottom: 14px; }
   .inwrap { position: relative; }
-  input {
+  input, select {
     width: 100%; font: inherit; font-size: 17px; padding: 10px 12px;
-    padding-left: 54px; border: 1px solid var(--line); border-radius: 10px;
+    border: 1px solid var(--line); border-radius: 10px;
     background: var(--bg); color: var(--text);
   }
-  input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
-  .unit {
-    position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
-    color: var(--muted); font-size: 14px; pointer-events: none;
-  }
-  button {
+  input { padding-left: 54px; }
+  select { appearance: none; -webkit-appearance: none; padding-left: 38px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%239aa3b2' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-position: 14px 50%; background-size: 12px 8px; background-repeat: no-repeat; }
+  input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type=number] { -moz-appearance: textfield; appearance: textfield; }
+  .unit { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 14px; pointer-events: none; }
+  .seg { display: flex; gap: 8px; }
+  .seg button { flex: 1; background: var(--bg); color: var(--text); border: 1px solid var(--line); font-weight: 600; margin: 0; }
+  .seg button.on { background: var(--btn); color: #fff; border-color: var(--btn); }
+  .hint { color: var(--muted); font-size: 13px; margin-top: 6px; }
+  .primary {
     width: 100%; font: inherit; font-size: 17px; font-weight: 700;
     padding: 12px; border: none; border-radius: 10px;
-    background: var(--accent); color: #fff; cursor: pointer; margin-top: 6px;
+    background: var(--btn); color: #fff; cursor: pointer; margin-top: 6px;
+    transition: transform .08s ease, filter .15s ease;
   }
-  button:hover { filter: brightness(1.07); }
+  .seg button { font: inherit; font-size: 16px; padding: 10px; border-radius: 10px; cursor: pointer; transition: transform .08s ease; }
+  .primary:active, .seg button:active { transform: scale(0.98); }
   .err { color: var(--bad); font-size: 14px; margin-top: 10px; min-height: 1em; }
+  .saved { color: var(--ok); font-size: 14px; margin-top: 10px; min-height: 1em; }
+
+  .profile-line { display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    background: var(--soft); border-radius: 10px; padding: 10px 12px; font-size: 14px; color: var(--muted); margin-bottom: 16px; }
+  .linkbtn { background: none; border: none; color: var(--accent); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; padding: 0; white-space: nowrap; }
+  .empty { text-align: center; padding: 10px 0 4px; }
+  .empty p { color: var(--muted); margin: 0 0 14px; }
+
   .result { margin-top: 18px; border-radius: 12px; padding: 18px; display: none; }
-  .result.show { display: block; }
-  .result.ok { background: var(--okbg); }
-  .result.warn { background: var(--warnbg); }
-  .result.bad { background: var(--badbg); }
-  .result.info { background: var(--infobg); }
+  .result.show { display: block; animation: pop .25s ease-out; }
+  @keyframes pop { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .result.ok { background: var(--okbg); } .result.warn { background: var(--warnbg); }
+  .result.bad { background: var(--badbg); } .result.info { background: var(--infobg); }
   .status { font-size: 22px; font-weight: 700; margin: 0 0 6px; }
-  .ok .status { color: var(--ok); }
-  .warn .status { color: var(--warn); }
-  .bad .status { color: var(--bad); }
-  .info .status { color: var(--info); }
+  .ok .status { color: var(--ok); } .warn .status { color: var(--warn); }
+  .bad .status { color: var(--bad); } .info .status { color: var(--info); }
   .bmi { font-size: 15px; margin: 0 0 12px; }
-  .action { font-size: 17px; font-weight: 600; margin: 0 0 12px; }
+  .action { font-size: 17px; font-weight: 600; margin: 0 0 4px; }
+  .eta { font-size: 14px; color: var(--muted); margin: 0 0 12px; }
   .range { font-size: 14px; color: var(--muted); margin: 0; }
   #scaleBox { display: flex; justify-content: center; margin: 6px 0 4px; }
   #gauge { width: 230px; max-width: 100%; height: auto; direction: ltr; }
@@ -87,222 +105,337 @@
   #gauge .val { font-size: 34px; font-weight: 700; fill: var(--text); font-family: "Cairo", sans-serif; }
   #gauge .cap { font-size: 12px; fill: var(--muted); font-family: "Cairo", sans-serif; }
   #gauge #dot { fill: var(--card); stroke: var(--text); stroke-width: 4; }
-  .note { font-size: 13px; color: var(--muted); margin-top: 18px; line-height: 1.7; }
-  html { -webkit-text-size-adjust: 100%; }
-  * { -webkit-tap-highlight-color: transparent; }
-  input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-  input[type=number] { -moz-appearance: textfield; appearance: textfield; }
-  button { transition: transform .08s ease, filter .15s ease; }
-  button:active { transform: scale(0.98); }
-  .result.show { animation: pop .25s ease-out; }
-  @keyframes pop { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
-  /* Mobile: full-screen app-like layout */
+  .cal { margin-top: 14px; border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: none; }
+  .cal.show { display: block; animation: pop .25s ease-out; }
+  .cal-row { display: flex; justify-content: space-between; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .cal-row:last-of-type { border-bottom: none; }
+  .cal-row .k { font-size: 15px; }
+  .cal-row .k small { display: block; color: var(--muted); font-size: 12px; }
+  .cal-row .v { font-size: 18px; font-weight: 700; white-space: nowrap; }
+  .cal-row .v small { font-size: 12px; font-weight: 400; color: var(--muted); }
+  .cal-row.hl { background: var(--soft); margin: 0 -10px; padding: 10px; border-radius: 8px; border-bottom: none; }
+  .note { font-size: 13px; color: var(--muted); margin-top: 18px; line-height: 1.7; }
+  .soon { text-align: center; padding: 30px 0; color: var(--muted); }
+  .soon .big { font-size: 40px; margin-bottom: 8px; }
+
+  .tabs {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 10;
+    display: flex; justify-content: center;
+    background: var(--card); border-top: 1px solid var(--line);
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+  }
+  .tabs-in { display: flex; width: 100%; max-width: 440px; }
+  .tab { flex: 1; background: none; border: none; font: inherit; color: var(--muted);
+    display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0; cursor: pointer; font-size: 12px; font-weight: 600; }
+  .tab svg { width: 24px; height: 24px; }
+  .tab.on { color: var(--accent); }
+  .view { display: none; } .view.on { display: block; }
+
   @media (max-width: 520px) {
-    body { padding: 0; background: var(--card); }
-    .card {
-      max-width: none; min-height: 100vh; border: none; border-radius: 0;
-      padding: 22px 18px 32px;
-      padding-bottom: calc(32px + env(safe-area-inset-bottom));
-    }
+    body { padding: 0 0 90px; background: var(--card); }
+    .card { max-width: none; min-height: 100vh; border: none; border-radius: 0; padding: 22px 18px 32px; }
     h1 { font-size: 26px; }
     .sub { font-size: 15px; margin-bottom: 22px; }
     label { font-size: 16px; }
     .field { margin-bottom: 16px; }
-    input { font-size: 20px; padding: 14px 14px; padding-left: 60px; border-radius: 12px; }
+    input, select { font-size: 19px; padding: 13px 14px; border-radius: 12px; }
+    input { padding-left: 60px; }
     .unit { font-size: 15px; left: 14px; }
-    button { font-size: 19px; padding: 15px; border-radius: 12px; margin-top: 8px; }
+    .primary { font-size: 19px; padding: 15px; border-radius: 12px; margin-top: 8px; }
     .result { padding: 20px 16px; border-radius: 14px; }
-    .status { font-size: 24px; }
-    .action { font-size: 18px; }
+    .status { font-size: 24px; } .action { font-size: 18px; }
     #gauge { width: 270px; }
   }
 </style>
 </head>
 <body>
 <div class="card">
-  <h1>حاسبة الوزن الطبيعي</h1>
-  <p class="sub">اكتب الوزن والطول والسن واضغط احسب</p>
 
-  <form id="f" novalidate>
-    <div class="field">
-      <label for="w">الوزن</label>
-      <div class="inwrap"><input id="w" type="number" inputmode="decimal" step="0.1" min="1" placeholder="مثلاً 70"><span class="unit">كجم</span></div>
-    </div>
-    <div class="field">
-      <label for="h">الطول</label>
-      <div class="inwrap"><input id="h" type="number" inputmode="decimal" step="0.1" min="1" placeholder="مثلاً 175"><span class="unit">سم</span></div>
-    </div>
-    <div class="field">
-      <label for="a">السن</label>
-      <div class="inwrap"><input id="a" type="number" inputmode="numeric" step="1" min="1" placeholder="مثلاً 30"><span class="unit">سنة</span></div>
-    </div>
-    <button type="submit">احسب</button>
-    <div class="err" id="err"></div>
-  </form>
+  <!-- Home -->
+  <section class="view on" id="v-home">
+    <h1>حاسبة الوزن الطبيعي</h1>
+    <p class="sub">اكتب وزنك واضغط احسب</p>
 
-  <div class="result" id="res">
-    <p class="status" id="status"></p>
-    <p class="bmi" id="bmi"></p>
-    <p class="action" id="action"></p>
-    <div id="scaleBox">
-      <svg id="gauge" viewBox="0 0 240 215" aria-hidden="true">
-        <g id="arcs"></g>
-        <g id="labels"></g>
-        <circle id="dot" r="11" cx="0" cy="0"></circle>
-        <text class="val" id="gval" x="120" y="128" text-anchor="middle"></text>
-        <text class="cap" x="120" y="150" text-anchor="middle">BMI</text>
-      </svg>
+    <div id="noProfile" class="empty" style="display:none">
+      <p>أول مرة؟ اكتب طولك وسنك ونوعك في "بياناتي"، مرة واحدة بس.</p>
+      <button class="primary" type="button" data-go="profile">ادخل بياناتي</button>
     </div>
-    <p class="range" id="range"></p>
-  </div>
 
-  <p class="note">
-    الحسبة بمؤشر كتلة الجسم (BMI) وتصنيف منظمة الصحة العالمية للكبار (18 سنة فأكثر):
-    أقل من 18.5 نحافة، من 18.5 لأقل من 25 طبيعي، من 25 لأقل من 30 زيادة وزن، 30 فأكثر سمنة.
-    المؤشر تقدير عام ولا يفرّق بين العضلات والدهون، ولا يُغني عن رأي الطبيب.
-  </p>
+    <div id="homeMain" style="display:none">
+      <div class="profile-line">
+        <span id="profileSummary"></span>
+        <button class="linkbtn" type="button" data-go="profile">تعديل</button>
+      </div>
+      <form id="f" novalidate>
+        <div class="field">
+          <label for="w">الوزن</label>
+          <div class="inwrap"><input id="w" type="number" inputmode="decimal" step="0.1" placeholder="مثلاً 70" enterkeyhint="go"><span class="unit">كجم</span></div>
+        </div>
+        <button class="primary" type="submit">احسب</button>
+        <div class="err" id="err"></div>
+      </form>
+
+      <div class="result" id="res">
+        <p class="status" id="status"></p>
+        <p class="bmi" id="bmi"></p>
+        <p class="action" id="action"></p>
+        <p class="eta" id="eta"></p>
+        <div id="scaleBox">
+          <svg id="gauge" viewBox="0 0 240 215" aria-hidden="true">
+            <g id="arcs"></g><g id="labels"></g>
+            <circle id="dot" r="11" cx="0" cy="0"></circle>
+            <text class="val" id="gval" x="120" y="128" text-anchor="middle"></text>
+            <text class="cap" x="120" y="150" text-anchor="middle">BMI</text>
+          </svg>
+        </div>
+        <p class="range" id="range"></p>
+      </div>
+
+      <div class="cal" id="cal">
+        <h2>السعرات اليومية</h2>
+        <div class="cal-row" id="r-maintain"><span class="k">عشان تثبت وزنك<small>احتياجك اليومي</small></span><span class="v"><span id="c-maintain"></span> <small>سعر</small></span></div>
+        <div class="cal-row" id="r-lose"><span class="k">عشان تخس<small>حوالي نص كيلو في الأسبوع</small></span><span class="v"><span id="c-lose"></span> <small>سعر</small></span></div>
+        <div class="cal-row" id="r-gain"><span class="k">عشان تزيد<small>حوالي نص كيلو في الأسبوع</small></span><span class="v"><span id="c-gain"></span> <small>سعر</small></span></div>
+        <p class="note" style="margin-top:8px">تقدير بمعادلة Mifflin-St Jeor حسب مستوى نشاطك. ممكن يختلف عن احتياجك الحقيقي بحوالي 10%.</p>
+      </div>
+    </div>
+
+    <p class="note">
+      تصنيف منظمة الصحة العالمية للكبار (18 سنة فأكثر): أقل من 18.5 نحافة، من 18.5 لأقل من 25 طبيعي، من 25 لأقل من 30 زيادة وزن، 30 فأكثر سمنة.
+      المؤشر تقدير عام ولا يفرّق بين العضلات والدهون، ولا يُغني عن رأي الطبيب.
+    </p>
+  </section>
+
+  <!-- Log (phase 2) -->
+  <section class="view" id="v-log">
+    <h1>سجلي</h1>
+    <div class="soon"><div class="big">📈</div>سجل الوزن والرسم البياني جايين في التحديث الجاي.</div>
+  </section>
+
+  <!-- Profile -->
+  <section class="view" id="v-profile">
+    <h1>بياناتي</h1>
+    <p class="sub">بتتحفظ على موبايلك بس، ومش بتتبعت لأي حد.</p>
+    <form id="pf" novalidate>
+      <div class="field">
+        <label for="ph">الطول</label>
+        <div class="inwrap"><input id="ph" type="number" inputmode="decimal" step="0.1" placeholder="مثلاً 175" enterkeyhint="next"><span class="unit">سم</span></div>
+      </div>
+      <div class="field">
+        <label for="pa">السن</label>
+        <div class="inwrap"><input id="pa" type="number" inputmode="numeric" step="1" placeholder="مثلاً 30" enterkeyhint="done"><span class="unit">سنة</span></div>
+      </div>
+      <div class="field">
+        <label>النوع</label>
+        <div class="seg" id="sexSeg">
+          <button type="button" data-sex="m">ذكر</button>
+          <button type="button" data-sex="f">أنثى</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="pact">مستوى النشاط</label>
+        <select id="pact">
+          <option value="1.2">قليل جدًا: شغل مكتبي ومفيش رياضة</option>
+          <option value="1.375">خفيف: رياضة خفيفة 1-3 أيام في الأسبوع</option>
+          <option value="1.55">متوسط: رياضة 3-5 أيام في الأسبوع</option>
+          <option value="1.725">عالي: رياضة قوية 6-7 أيام في الأسبوع</option>
+          <option value="1.9">عالي جدًا: شغل بدني ورياضة قوية يوميًا</option>
+        </select>
+        <div class="hint">لو محتار بين اختيارين، اختار الأقل. أغلب الناس بتختار نشاط أعلى من الحقيقي.</div>
+      </div>
+      <button class="primary" type="submit">حفظ</button>
+      <div class="err" id="perr"></div>
+      <div class="saved" id="psaved"></div>
+    </form>
+  </section>
 </div>
+
+<nav class="tabs">
+  <div class="tabs-in">
+    <button class="tab on" type="button" data-tab="home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18a8 8 0 1 1 16 0"/><path d="M12 18l4-6"/></svg>
+      الرئيسية
+    </button>
+    <button class="tab" type="button" data-tab="log">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"/><path d="M5 15l4-4 3 3 6-6"/></svg>
+      سجلي
+    </button>
+    <button class="tab" type="button" data-tab="profile">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+      بياناتي
+    </button>
+  </div>
+</nav>
 
 <script>
   const $ = id => document.getElementById(id);
   const fmt = n => (Math.round(n * 10) / 10).toLocaleString('en-US');
+  const fmt0 = n => Math.round(n).toLocaleString('en-US');
 
-  // Map BMI 15..35 onto the bar (segments: 15-18.5=20%, 18.5-25=32%, 25-30=24%, 30-35=24%)
+  // ---------- storage (works even if storage is blocked) ----------
+  const store = {
+    get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (_) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (_) { return false; } }
+  };
+  let profile = store.get('bmi.profile');
+  let memProfile = null; // fallback when storage is unavailable
+
+  // ---------- tabs ----------
+  function showTab(name) {
+    document.querySelectorAll('.view').forEach(v => v.classList.toggle('on', v.id === 'v-' + name));
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.tab === name));
+    if (name === 'profile') fillProfileForm();
+    if (name === 'home') renderHome();
+    window.scrollTo(0, 0);
+  }
+  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => showTab(t.dataset.tab)));
+  document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => showTab(b.dataset.go)));
+
+  // ---------- profile ----------
+  const ACT_NAMES = { '1.2': 'نشاط قليل جدًا', '1.375': 'نشاط خفيف', '1.55': 'نشاط متوسط', '1.725': 'نشاط عالي', '1.9': 'نشاط عالي جدًا' };
+  let sex = null;
+  document.querySelectorAll('#sexSeg button').forEach(b => b.addEventListener('click', () => {
+    sex = b.dataset.sex;
+    document.querySelectorAll('#sexSeg button').forEach(x => x.classList.toggle('on', x === b));
+  }));
+  function fillProfileForm() {
+    const p = profile || memProfile;
+    $('perr').textContent = ''; $('psaved').textContent = '';
+    if (!p) return;
+    $('ph').value = p.h; $('pa').value = p.a; $('pact').value = String(p.act);
+    sex = p.sex;
+    document.querySelectorAll('#sexSeg button').forEach(x => x.classList.toggle('on', x.dataset.sex === sex));
+  }
+  $('ph').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('pa').focus(); } });
+  $('pa').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('pa').blur(); } });
+  $('pf').addEventListener('submit', e => {
+    e.preventDefault();
+    const h = parseFloat($('ph').value), a = parseFloat($('pa').value), act = parseFloat($('pact').value);
+    $('perr').textContent = ''; $('psaved').textContent = '';
+    if (!(h >= 50 && h <= 250)) { $('perr').textContent = 'اكتب الطول بالسنتيمتر (مثلاً 175).'; return; }
+    if (!(a >= 2 && a <= 120)) { $('perr').textContent = 'اكتب السن بالسنين (مثلاً 30).'; return; }
+    if (!sex) { $('perr').textContent = 'اختار النوع.'; return; }
+    const p = { h, a: Math.round(a), sex, act };
+    if (store.set('bmi.profile', p)) { profile = p; } else { memProfile = p; }
+    if (document.activeElement) document.activeElement.blur();
+    $('psaved').textContent = 'اتحفظ ✓';
+    setTimeout(() => showTab('home'), 500);
+  });
+
+  // ---------- gauge ----------
   function markerPos(b) {
     const pts = [[15, 0], [18.5, 20], [25, 52], [30, 76], [35, 100]];
-    if (b <= 15) return 0;
-    if (b >= 35) return 100;
-    for (let i = 1; i < pts.length; i++) {
-      if (b <= pts[i][0]) {
-        const [x0, y0] = pts[i - 1], [x1, y1] = pts[i];
-        return y0 + (b - x0) / (x1 - x0) * (y1 - y0);
-      }
+    if (b <= 15) return 0; if (b >= 35) return 100;
+    for (let i = 1; i < pts.length; i++) if (b <= pts[i][0]) {
+      const [x0, y0] = pts[i - 1], [x1, y1] = pts[i];
+      return y0 + (b - x0) / (x1 - x0) * (y1 - y0);
     }
     return 100;
   }
-
-  // Circular gauge: 270° arc, starting bottom-left, going clockwise to bottom-right
-  const CX = 120, CY = 115, R = 88, START = 135, SWEEP = 270;
-  const NS = 'http://www.w3.org/2000/svg';
-  const pt = (deg, r) => {
-    const a = deg * Math.PI / 180;
-    return [CX + r * Math.cos(a), CY + r * Math.sin(a)];
-  };
+  const CX = 120, CY = 115, R = 88, START = 135, SWEEP = 270, NS = 'http://www.w3.org/2000/svg';
+  const pt = (deg, r) => { const a = deg * Math.PI / 180; return [CX + r * Math.cos(a), CY + r * Math.sin(a)]; };
   const angleAt = pct => START + SWEEP * pct / 100;
   function arcPath(p0, p1) {
-    const a0 = angleAt(p0), a1 = angleAt(p1);
-    const [x0, y0] = pt(a0, R), [x1, y1] = pt(a1, R);
-    const large = (a1 - a0) > 180 ? 1 : 0;
-    return `M ${x0} ${y0} A ${R} ${R} 0 ${large} 1 ${x1} ${y1}`;
+    const a0 = angleAt(p0), a1 = angleAt(p1), [x0, y0] = pt(a0, R), [x1, y1] = pt(a1, R);
+    return `M ${x0} ${y0} A ${R} ${R} 0 ${(a1 - a0) > 180 ? 1 : 0} 1 ${x1} ${y1}`;
   }
   (function drawGauge() {
-    const segs = [[0, 20, '#7aa7e8'], [20, 52, '#4fb37a'], [52, 76, '#e5b15a'], [76, 100, '#e0705f']];
-    const gap = 0.6;
+    const segs = [[0, 20, '#7aa7e8'], [20, 52, '#4fb37a'], [52, 76, '#e5b15a'], [76, 100, '#e0705f']], gap = 0.6;
     segs.forEach(([p0, p1, c], i) => {
       const p = document.createElementNS(NS, 'path');
       p.setAttribute('d', arcPath(p0 + (i ? gap : 0), p1 - (i < segs.length - 1 ? gap : 0)));
-      p.setAttribute('fill', 'none');
-      p.setAttribute('stroke', c);
-      p.setAttribute('stroke-width', '18');
-      p.setAttribute('stroke-linecap', 'butt');
+      p.setAttribute('fill', 'none'); p.setAttribute('stroke', c); p.setAttribute('stroke-width', '18');
       $('arcs').appendChild(p);
     });
     [[0, '15'], [20, '18.5'], [52, '25'], [76, '30'], [100, '35+']].forEach(([pct, t]) => {
-      const [x, y] = pt(angleAt(pct), R + 22);
-      const tx = document.createElementNS(NS, 'text');
-      tx.setAttribute('x', x); tx.setAttribute('y', y + 4);
-      tx.setAttribute('text-anchor', 'middle');
-      tx.setAttribute('class', 'lbl');
-      tx.textContent = t;
-      $('labels').appendChild(tx);
+      const [x, y] = pt(angleAt(pct), R + 22), tx = document.createElementNS(NS, 'text');
+      tx.setAttribute('x', x); tx.setAttribute('y', y + 4); tx.setAttribute('text-anchor', 'middle');
+      tx.setAttribute('class', 'lbl'); tx.textContent = t; $('labels').appendChild(tx);
     });
   })();
   function setGauge(bmi) {
     const [x, y] = pt(angleAt(markerPos(bmi)), R);
-    $('dot').setAttribute('cx', x);
-    $('dot').setAttribute('cy', y);
-    $('gval').textContent = fmt(bmi);
+    $('dot').setAttribute('cx', x); $('dot').setAttribute('cy', y); $('gval').textContent = fmt(bmi);
   }
 
-  // Offline support when installed as an app
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js').catch(() => {});
-    });
+  // ---------- home ----------
+  function renderHome() {
+    const p = profile || memProfile;
+    $('noProfile').style.display = p ? 'none' : '';
+    $('homeMain').style.display = p ? '' : 'none';
+    if (!p) return;
+    $('profileSummary').textContent = `${fmt(p.h)} سم · ${p.a} سنة · ${p.sex === 'm' ? 'ذكر' : 'أنثى'} · ${ACT_NAMES[String(p.act)] || ''}`;
+    const last = store.get('bmi.lastWeight');
+    if (last && !$('w').value) $('w').value = last;
   }
 
-  // Close the phone keyboard and bring the result into view
   function revealResult() {
     if (document.activeElement) document.activeElement.blur();
-    setTimeout(() => {
-      try { $('res').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (_) {}
-    }, 120);
+    setTimeout(() => { try { $('res').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (_) {} }, 120);
   }
-  // "Next" on the keyboard moves to the next field
-  ['w', 'h'].forEach((id, i) => {
-    $(id).setAttribute('enterkeyhint', 'next');
-    $(id).addEventListener('keydown', ev => {
-      if (ev.key === 'Enter') { ev.preventDefault(); $(['h', 'a'][i]).focus(); }
-    });
-  });
-  $('a').setAttribute('enterkeyhint', 'go');
 
   $('f').addEventListener('submit', e => {
     e.preventDefault();
-    const w = parseFloat($('w').value);
-    const h = parseFloat($('h').value);
-    const a = parseFloat($('a').value);
-    const res = $('res');
-    $('err').textContent = '';
-    res.className = 'result';
+    const p = profile || memProfile; if (!p) return;
+    const w = parseFloat($('w').value), h = p.h, a = p.a;
+    const res = $('res'), cal = $('cal');
+    $('err').textContent = ''; res.className = 'result'; cal.className = 'cal';
+    if (!(w >= 10 && w <= 400)) { $('err').textContent = 'اكتب الوزن بالكيلو (مثلاً 70).'; return; }
+    store.set('bmi.lastWeight', w);
 
-    if (!(w > 0) || !(h > 0) || !(a > 0)) {
-      $('err').textContent = 'اكتب الوزن والطول والسن بأرقام صحيحة.';
-      return;
-    }
-    if (h < 50 || h > 250) { $('err').textContent = 'الطول لازم يكون بالسنتيمتر (مثلاً 175).'; return; }
-    if (w < 10 || w > 400) { $('err').textContent = 'الوزن لازم يكون بالكيلو (مثلاً 70).'; return; }
-
-    const m = h / 100, m2 = m * m;
-    const bmi = w / m2;
-    const minW = 18.5 * m2, maxW = 24.9 * m2;
+    const m2 = (h / 100) ** 2, bmi = w / m2, minW = 18.5 * m2, maxW = 24.9 * m2;
+    $('bmi').textContent = 'مؤشر كتلة الجسم: ' + fmt(bmi);
 
     if (a < 18) {
       res.classList.add('show', 'info');
       $('status').textContent = 'السن أقل من 18 سنة';
-      $('bmi').textContent = 'مؤشر كتلة الجسم: ' + fmt(bmi);
-      $('action').textContent = 'تصنيف الكبار لا ينطبق على هذا السن. التقييم يكون بجداول النمو حسب السن والجنس، والأفضل مراجعة طبيب الأطفال.';
-      $('scaleBox').style.display = 'none';
-      $('range').textContent = '';
-      revealResult();
-      return;
+      $('action').textContent = 'تصنيف الكبار والسعرات هنا لا تنطبق على هذا السن. التقييم يكون بجداول النمو حسب السن والجنس، والأفضل مراجعة طبيب الأطفال.';
+      $('eta').textContent = ''; $('scaleBox').style.display = 'none'; $('range').textContent = '';
+      revealResult(); return;
     }
 
-    $('scaleBox').style.display = '';
-    setGauge(bmi);
-    $('bmi').textContent = 'مؤشر كتلة الجسم: ' + fmt(bmi);
-    $('range').textContent = 'الوزن الطبيعي لطول ' + fmt(h) + ' سم: من ' + fmt(minW) + ' إلى ' + fmt(maxW) + ' كجم';
+    $('scaleBox').style.display = ''; setGauge(bmi);
+    $('range').textContent = `الوزن الطبيعي لطولك: من ${fmt(minW)} إلى ${fmt(maxW)} كجم`;
 
-    let cls, status, action;
+    let cls, status, action, eta = '', diff = 0, goal = 'maintain';
     if (bmi < 18.5) {
-      cls = 'warn'; status = 'وزن ناقص (نحافة)';
-      action = 'محتاج تزيد حوالي ' + fmt(minW - w) + ' كجم عشان توصل لأقل وزن طبيعي.';
+      cls = 'warn'; status = 'وزن ناقص (نحافة)'; diff = minW - w; goal = 'gain';
+      action = `محتاج تزيد حوالي ${fmt(diff)} كجم عشان توصل لأقل وزن طبيعي.`;
     } else if (bmi < 25) {
       cls = 'ok'; status = 'وزن طبيعي';
       action = 'وزنك في النطاق الطبيعي، مش محتاج تزيد أو تنقص.';
-    } else if (bmi < 30) {
-      cls = 'warn'; status = 'وزن زائد';
-      action = 'محتاج تنقص حوالي ' + fmt(w - maxW) + ' كجم عشان توصل لأعلى وزن طبيعي.';
     } else {
-      cls = 'bad'; status = 'سمنة';
-      action = 'محتاج تنقص حوالي ' + fmt(w - maxW) + ' كجم عشان توصل لأعلى وزن طبيعي.';
+      cls = bmi < 30 ? 'warn' : 'bad'; status = bmi < 30 ? 'وزن زائد' : 'سمنة'; diff = w - maxW; goal = 'lose';
+      action = `محتاج تنقص حوالي ${fmt(diff)} كجم عشان توصل لأعلى وزن طبيعي.`;
+    }
+    if (diff > 0) {
+      const weeks = Math.ceil(diff / 0.5);
+      eta = weeks <= 8 ? `بمعدل نص كيلو في الأسبوع: حوالي ${weeks} أسبوع.`
+                       : `بمعدل نص كيلو في الأسبوع: حوالي ${weeks} أسبوع (${fmt(weeks / 4.345)} شهر تقريبًا).`;
     }
     res.classList.add('show', cls);
-    $('status').textContent = status;
-    $('action').textContent = action;
+    $('status').textContent = status; $('action').textContent = action; $('eta').textContent = eta;
+
+    // Calories: Mifflin-St Jeor BMR x activity factor; +/-500 kcal ≈ 0.5 kg/week
+    const bmr = 10 * w + 6.25 * h - 5 * a + (p.sex === 'm' ? 5 : -161);
+    const tdee = bmr * p.act;
+    $('c-maintain').textContent = fmt0(tdee);
+    $('c-lose').textContent = fmt0(tdee - 500);
+    $('c-gain').textContent = fmt0(tdee + 500);
+    $('r-lose').style.display = goal === 'gain' ? 'none' : '';
+    $('r-gain').style.display = goal === 'lose' ? 'none' : '';
+    ['maintain', 'lose', 'gain'].forEach(k => $('r-' + k).classList.toggle('hl', k === goal));
+    cal.classList.add('show');
     revealResult();
   });
+
+  // ---------- offline support ----------
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+  }
+
+  renderHome();
 </script>
 </body>
 </html>
