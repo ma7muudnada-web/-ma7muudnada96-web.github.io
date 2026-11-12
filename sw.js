@@ -1,5 +1,5 @@
 // Keeps the app working without internet after the first open
-const CACHE = 'bmi-v11';
+const CACHE = 'bmi-v12';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {

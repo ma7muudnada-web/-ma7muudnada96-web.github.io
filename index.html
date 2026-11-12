@@ -220,6 +220,13 @@
   .days li span:last-child { color: var(--muted); }
   .tab { font-size: 11px; }
 
+  /* ---- vitamins ---- */
+  .nlist { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; margin-top: 4px; }
+  .nrow .nh { display: flex; justify-content: space-between; align-items: baseline; font-size: 14px; }
+  .nrow .nh b { font-size: 15px; } .nrow .nh b.low { color: var(--warn); } .nrow .nh b.full { color: var(--ok); }
+  .nrow .bar { margin-top: 4px; height: 6px; } .nrow .bar i { background: var(--mango); } .nrow .bar i.done { background: var(--ok); }
+  .nrow small { font-size: 11px; color: var(--muted); }
+
   /* ---- water & exercise ---- */
   .water { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   .wbtn { width: 56px; height: 56px; border-radius: 50%; border: 1.5px solid var(--line); background: var(--bg); color: var(--text); font-size: 28px; line-height: 1; cursor: pointer; }
@@ -382,6 +389,11 @@
       <div class="tcard">
         <h2>أكل النهارده <button class="linkbtn" type="button" data-go="day">كل التفاصيل</button></h2>
         <div id="tMeals"></div>
+      </div>
+
+      <div class="tcard" id="tNutrCard" style="display:none">
+        <h2>فيتامينات النهارده <button class="linkbtn" type="button" data-go="day">الكل</button></h2>
+        <div class="nlist" id="tNutr"></div>
       </div>
 
       <div class="tcard" id="tTipCard">
@@ -551,6 +563,14 @@
         <table class="foods-tbl" id="foodsTbl"></table>
         <p>الأرقام من وزارة الزراعة الأمريكية (USDA): جدول Nutritive Value of Foods وقاعدة FoodData Central. اللي عليه * أنا حسبته منهم لكمية مختلفة. الأرقام تقريبية وبتختلف حسب الطبخ والحجم.</p>
       </details>
+    </div>
+
+    <div class="block" id="nutrBlock" style="display:none">
+      <h2>الفيتامينات والمعادن <small>من القيمة اليومية</small></h2>
+      <div id="nutrList" class="nlist"></div>
+      <ul class="tips" id="nutrTips" style="margin-top:6px"></ul>
+      <div class="muted" id="nutrNote" style="margin-top:4px;color:var(--warn)"></div>
+      <p class="note" style="margin-top:8px">من جدول USDA للأكلات اللي التطبيق بيعرفها، مقارنة بالقيمة اليومية بتاعة FDA، والحديد حسب سنك ونوعك. فيتامين A من الخضار ممكن يطلع أعلى شوية من الحقيقي.</p>
     </div>
 
     <div class="block">
@@ -973,8 +993,10 @@
       if (before.length || inW.length >= 2) wChange = inW[inW.length - 1].w - ref;
     }
     const exEq = recs.reduce((s, r) => s + exModEq(r), 0), exDays = recs.filter(r => r.ex.length).length;
+    const nDays = recs.filter(r => r.meals.length).map(dayNutr);
+    const nutrAvg = nDays.length ? NUTS.map((n, j) => ({ ...n, pct: nDays.reduce((s, d) => s + d.pct[j].pct, 0) / nDays.length })) : null;
     const waterDays = recs.filter(r => r.water > 0), water = waterDays.length ? waterDays.reduce((s, r) => s + r.water, 0) / waterDays.length : null;
-    return { startIso, endIso, any: keys.length > 0 || inW.length > 0, exEq, exDays, water,
+    return { startIso, endIso, any: keys.length > 0 || inW.length > 0, exEq, exDays, water, nutrAvg,
       sleep: sleeps.length ? sleeps.reduce((a, b) => a + b, 0) / sleeps.length : null, sleepN: sleeps.length,
       kcal: kcalDays.length ? kcalDays.reduce((a, b) => a + b, 0) / kcalDays.length : null, kcalN: kcalDays.length,
       mealDays, vf, wChange };
@@ -1018,6 +1040,11 @@
     if (p && p.a >= 18) {
       if (cur.exEq >= 150) add('🏃', `اتمرنت ما يعادل ${mns(cur.exEq)} نشاط متوسط الأسبوع ده. ده جوه توصية منظمة الصحة العالمية (150 لـ 300 دقيقة في الأسبوع).`);
       else add('🏃', `${cur.exEq ? `اتمرنت ما يعادل ${mns(cur.exEq)} نشاط متوسط` : 'ما سجلتش رياضة'} الأسبوع ده. منظمة الصحة العالمية بتنصح بـ 150 دقيقة على الأقل في الأسبوع، يعني حوالي 22 دقيقة في اليوم، زي المشي السريع.`);
+    }
+    if (cur.nutrAvg) {
+      const low = cur.nutrAvg.filter(n => n.pct < 60).sort((a, b) => a.pct - b.pct).slice(0, 2);
+      if (low.length) add('💊', `أقل حاجات في أكلك الأسبوع ده: ${low.map(n => `${n.n} (${Math.round(n.pct)}%)`).join(' و')}. جرّب: ${topSources(low[0].i).join('، ')}.`);
+      else add('💊', 'متوسط الفيتامينات والمعادن في أكلك كويس الأسبوع ده.');
     }
     if (cur.water !== null) add('💧', `متوسط المية: حوالي ${cups(Math.round(cur.water * 10) / 10)} في اليوم${cur.water < waterTarget() ? ` من ${waterTarget()}` : ''}.`);
     if (cur.mealDays && cur.vf < cur.mealDays) add('🥗', cur.vf ? `أكلت خضار وفاكهة مع بعض في ${count(cur.vf, 'يوم واحد', 'يومين', 'أيام')} بس من ${cur.mealDays}. حاول يبقوا في أكلك كل يوم.` : 'ما أكلتش خضار وفاكهة مع بعض في أي يوم سجلته. حاول يبقوا في أكلك كل يوم.');
@@ -1219,7 +1246,7 @@
     $('kTarget').textContent = need ? `${need.label}: ${fmt0(need.target)} سعر · فاضل ${fmt0(Math.max(need.target - total, 0))}` : '';
     $('kBarWrap').style.display = withK.length && need ? '' : 'none';
     if (need) { const pct = total / need.target * 100; $('kBar').style.width = Math.min(pct, 100) + '%'; $('kBar').classList.toggle('over', pct > 100); }
-    renderWater(r); renderEx(r);
+    renderNutr(r); renderWater(r); renderEx(r);
     renderAdvice(r, sm, meals, withK.length ? total : null, need);
     $('kNote').textContent = missing && withK.length ? `فيه ${missing === 1 ? 'أكلة' : mealsN(missing)} فيها حاجات التطبيق مش عارف سعراتها، فالإجمالي أقل من الحقيقي. اكتب السعرات بإيدك لو تعرفها.` : '';
     renderPastDays();
@@ -1483,6 +1510,98 @@
   // moderate-equivalent minutes (WHO: vigorous minutes count double); vigorous = MET >= 6
   const exModEq = r => r.ex.reduce((s, x) => { const e = exById(x.t); return e && e.m >= 3 ? s + x.min * (e.m >= 6 ? 2 : 1) : s; }, 0);
 
+
+  // ---------- vitamins & minerals ----------
+  // Per unit, order: calcium mg, iron mg, potassium mg, vitamin A (mcg RE in HG-72 / RAE in FDC), B1 mg, B2 mg, B3 mg, vitamin C mg
+  // H = USDA HG-72 Table 9 item; F = USDA FoodData Central; derived rows scaled from those.
+  const NV = {
+    H14: [11, 0.1, 4, 0, 0, 0, 0, 0], H29: [4, 0.1, 96, 0, 0, 0, 0.4, 0], H45: [0, 0, 66, 0, 0, 0.02, 0, 0],
+    H54: [204, 0.2, 28, 79, 0.01, 0.11, 0, 0], H58: [126, 0.3, 177, 101, 0.04, 0.34, 0.3, 0], H67: [140, 0.2, 18, 36, 0.04, 0.24, 0.3, 0],
+    H69: [147, 0.1, 19, 68, 0, 0.07, 0, 0], H80: [174, 0.1, 46, 82, 0.01, 0.10, 0, 0], H112: [84, 0.1, 131, 77, 0.03, 0.16, 0.1, 0],
+    H118: [291, 0.1, 370, 76, 0.09, 0.40, 0.2, 2], H128: [280, 0.6, 417, 73, 0.09, 0.41, 0.3, 2], H138: [274, 0.1, 351, 68, 0.07, 0.32, 0.2, 1],
+    H145: [25, 0.7, 61, 114, 0.03, 0.24, 0, 0], H146: [25, 0.6, 63, 84, 0.03, 0.26, 0, 0], H149: [43, 0.7, 84, 119, 0.03, 0.27, 0, 0],
+    H152: [3, 0, 4, 107, 0, 0, 0, 0], H172: [0, 0, 0, 0, 0, 0, 0, 0], H176: [0, 0.1, 0, 0, 0, 0, 0, 0], H197: [2, 0.1, 5, 12, 0, 0, 0, 0],
+    H215: [8, 0.3, 439, 9, 0.02, 0.04, 2.1, 3], H260: [11, 1.2, 176, 20, 0.03, 0.10, 10.5, 0], H261: [9, 1.3, 201, 14, 0.03, 0.06, 11.3, 0],
+    H264: [10, 0.2, 159, 7, 0.02, 0.02, 0.1, 8], H267: [17, 0.9, 295, 0, 0.05, 0.04, 0.2, 2], H271: [5, 0.2, 104, 91, 0.01, 0.01, 0.2, 4],
+    H280: [7, 0.4, 467, 9, 0.05, 0.12, 0.6, 11], H292: [13, 0.5, 274, 2, 0.04, 0.04, 0.9, 0], H294: [55, 0.8, 271, 5, 0.03, 0.03, 0.3, 0],
+    H306: [6, 0.1, 93, 4, 0.05, 0.03, 0.2, 5], H311: [20, 0.3, 252, 14, 0.02, 0.04, 0.4, 74], H319: [21, 0.3, 323, 805, 0.12, 0.12, 1.2, 57],
+    H321: [8, 0.1, 213, 222, 0.02, 0.01, 0.4, 29], H327: [52, 0.1, 237, 28, 0.11, 0.05, 0.4, 70], H329: [27, 0.5, 496, 50, 0.22, 0.07, 1.0, 124],
+    H337: [5, 0.1, 193, 53, 0.02, 0.04, 1.0, 6], H345: [18, 0.4, 208, 3, 0.03, 0.07, 0.2, 7], H350: [11, 0.6, 175, 3, 0.14, 0.06, 0.7, 24],
+    H358: [3, 0.1, 114, 21, 0.03, 0.06, 0.3, 6], H373: [23, 0.6, 276, 5, 0.03, 0.11, 0.4, 94], H375: [12, 0.1, 132, 77, 0.09, 0.02, 0.1, 26],
+    H378: [23, 0.5, 332, 106, 0.23, 0.06, 0.6, 27], H404: [52, 1.6, 72, 0, 0.36, 0.20, 2.8, 0], H415: [27, 0.8, 30, 0, 0.12, 0.09, 1.0, 0],
+    H433: [19, 1.6, 131, 5, 0.26, 0.05, 0.3, 0], H634: [20, 0.8, 84, 0, 0.19, 0.05, 3.0, 0], H636: [16, 1.9, 55, 0, 0.26, 0.02, 2.3, 0],
+    H646: [10, 2.0, 43, 0, 0.29, 0.14, 2.3, 0], H673: [70, 1.2, 206, 0, 0.07, 0.23, 1.1, 0], H676: [50, 5.2, 713, 0, 0.28, 0.10, 1.0, 2],
+    H695: [80, 4.7, 477, 5, 0.19, 0.10, 0.9, 2], H702: [5, 0.3, 32, 0, 0.03, 0.01, 0.1, 0], H703: [38, 6.6, 731, 2, 0.33, 0.14, 2.1, 3],
+    H708: [15, 0.6, 187, 0, 0.12, 0.03, 3.8, 0], H734: [29, 0.8, 125, 1, 0.10, 0.04, 0.5, 0], H739: [6, 2.0, 266, 0, 0.05, 0.23, 4.2, 0],
+    H742: [9, 5.3, 309, 9120, 0.18, 3.52, 12.3, 20], H747: [9, 2.6, 311, 0, 0.09, 0.23, 3.3, 0],
+    H876: [13, 0.9, 220, 5, 0.06, 0.10, 11.8, 0], H877: [5, 0.6, 108, 8, 0.03, 0.10, 2.7, 0], H878: [6, 0.7, 124, 10, 0.04, 0.12, 3.4, 0],
+    H1004: [1, 0.1, 11, 0, 0, 0.01, 0, 0], H1025: [0, 0, 0, 0, 0, 0, 0, 0], H1049: [58, 1.6, 374, 84, 0.09, 0.12, 0.8, 12],
+    H1067: [72, 1.3, 456, 217, 0.09, 0.18, 0.9, 116], H1073: [47, 0.3, 146, 20, 0.09, 0.08, 0.4, 30], H1079: [19, 0.4, 233, 2025, 0.07, 0.04, 0.7, 7],
+    H1106: [39, 0.4, 414, 20, 0.06, 0.03, 0.3, 8], H1111: [6, 0.3, 246, 6, 0.08, 0.02, 0.6, 1], H1124: [10, 0.3, 87, 18, 0.03, 0.02, 0.1, 2],
+    H1135: [101, 0.7, 515, 93, 0.21, 0.09, 1.4, 26], H1137: [32, 0.4, 251, 0, 0.07, 0.03, 0.2, 10], H1151: [38, 2.5, 269, 107, 0.45, 0.16, 2.4, 16],
+    H1163: [20, 2.7, 844, 0, 0.22, 0.07, 3.3, 26], H1166: [7, 0.4, 515, 0, 0.14, 0.03, 2.0, 18], H1171: [4, 0.6, 209, 0, 0.06, 0.01, 1.0, 5],
+    H1193: [245, 6.4, 839, 1474, 0.17, 0.42, 0.9, 18], H1197: [49, 0.6, 346, 52, 0.08, 0.07, 0.9, 10], H1209: [6, 0.6, 273, 76, 0.07, 0.06, 0.8, 23],
+    H1257: [7, 0.5, 361, 0, 0.05, 0.06, 1.1, 9],
+    F173798: [61.2, 2.6, 455.6, 1.7, 0.16, 0.15, 1.2, 0.51], F172455: [9.18, 0.58, 99.45, 0, 0.02, 0.03, 0.18, 0.27],
+    F173044: [10, 0.14, 229, 17, 0.037, 0.022, 0.596, 125.6]
+  };
+  const scaleV = (v, k) => v.map(x => x * k);
+  const sumV = (...vs) => vs.reduce((a, v) => a.map((x, i) => x + v[i]), [0, 0, 0, 0, 0, 0, 0, 0]);
+  NV.dH138 = scaleV(NV.H138, 105 / 227);       // yogurt 105 g from 227 g
+  NV.dH292 = scaleV(NV.H292, 1 / 5);           // one date from 5
+  NV.dH294 = scaleV(NV.H294, 1 / 2);           // one dried fig from 2
+  NV.dH1106 = scaleV(NV.H1106, 100 / 280);     // small cucumber 100 g from 280 g
+  NV['dH1124+1209+1106'] = sumV(NV.H1124, NV.H1209, NV.dH1106);
+  FOODS.forEach(f => { f.v = NV[f.s] || null; });   // shrimp (H859) left without vitamins: values looked unreliable
+
+  // index in NV arrays -> meta (FDA Daily Values)
+  const NUTS = [
+    { i: 7, id: 'c', n: 'فيتامين C', u: 'مجم', dv: 90 },
+    { i: 3, id: 'a', n: 'فيتامين A', u: 'مكجم', dv: 900 },
+    { i: 4, id: 'b1', n: 'فيتامين B1', u: 'مجم', dv: 1.2 },
+    { i: 5, id: 'b2', n: 'فيتامين B2', u: 'مجم', dv: 1.3 },
+    { i: 6, id: 'b3', n: 'فيتامين B3', u: 'مجم', dv: 16 },
+    { i: 0, id: 'ca', n: 'كالسيوم', u: 'مجم', dv: 1300 },
+    { i: 1, id: 'fe', n: 'حديد', u: 'مجم', dv: 18 },
+    { i: 2, id: 'k', n: 'بوتاسيوم', u: 'مجم', dv: 4700 }
+  ];
+  function dayNutr(r) {
+    let tot = [0, 0, 0, 0, 0, 0, 0, 0], counted = 0, skipped = 0;
+    r.meals.forEach(m => {
+      const est = estimateMeal(m.what);
+      est.items.forEach(it => { if (it.f.v) { tot = tot.map((x, i) => x + it.f.v[i] * it.q); counted++; } else skipped++; });
+      skipped += est.unknown.length;
+    });
+    // iron: men and women over 50 need about 8 mg; women 19-50 about 18 mg
+    const p = profile || memProfile, ironNeed = p && p.a >= 19 && (p.sex === 'm' || p.a > 50) ? 8 : 18;
+    return { tot, counted, skipped, pct: NUTS.map(n => { const dv = n.id === 'fe' ? ironNeed : n.dv; return { ...n, dv, amt: tot[n.i], pct: tot[n.i] / dv * 100 }; }) };
+  }
+  // best everyday sources per nutrient (from the food list, per usual portion; very high liver excluded from tips)
+  const topSources = idx => FOODS.filter(f => f.v && f.s !== 'H742' && f.v[idx] > 0).sort((a, b) => b.v[idx] - a.v[idx])
+    .filter((f, i, arr) => arr.findIndex(g => g.n === f.n) === i).slice(0, 3).map(f => f.n.replace(/ \(.*\)$/, ''));
+  const fmtAmt = (x, u) => (x >= 100 ? fmt0(x) : x >= 10 ? fmt(x) : (Math.round(x * 100) / 100).toLocaleString('en-US')) + ' ' + u;
+  function renderNutr(r) {
+    const box = $('nutrList'); box.innerHTML = '';
+    const d = dayNutr(r);
+    $('nutrBlock').style.display = r.meals.length ? '' : 'none';
+    if (!r.meals.length) return;
+    d.pct.forEach(n => {
+      const row = document.createElement('div'); row.className = 'nrow';
+      const p = Math.round(n.pct);
+      row.innerHTML = `<div class="nh"><span>${n.n}</span><b class="${p >= 100 ? 'full' : p < 30 ? 'low' : ''}">${p}%</b></div><div class="bar"><i style="width:${Math.min(p, 100)}%"></i></div><small>${fmtAmt(n.amt, n.u)} من ${fmtAmt(n.dv, n.u)}</small>`;
+      if (p >= 100) row.querySelector('.bar i').classList.add('done');
+      box.appendChild(row);
+    });
+    const low = d.pct.filter(n => n.pct < 50).sort((a, b) => a.pct - b.pct).slice(0, 2);
+    $('nutrTips').innerHTML = '';
+    low.forEach(n => {
+      const li = document.createElement('li');
+      li.innerHTML = `<span class="ic">➕</span><span><b>ناقصك ${n.n}</b><small>من أغنى الأكلات بيه: ${topSources(n.i).join('، ')}</small></span>`;
+      $('nutrTips').appendChild(li);
+    });
+    $('nutrNote').textContent = d.skipped ? 'فيه أكلات التطبيق مش عارف فيتاميناتها، فالأرقام أقل من الحقيقي.' : '';
+  }
+
   // ---------- daily advice ----------
   const GROUPS = {
     protein: { name: 'بروتين', words: ['بيض', 'بيضه', 'فراخ', 'فرخه', 'دجاج', 'لحم', 'لحمه', 'كبده', 'سمك', 'تونه', 'جمبري', 'سردين', 'فول', 'عدس', 'حمص', 'فاصوليا', 'لوبيا', 'طعميه', 'فلافل', 'كفته', 'برجر', 'سجق', 'بانيه', 'شاورما', 'ستيك', 'كباب', 'مكسرات', 'لوز', 'سوداني', 'بندق', 'كاجو', 'عين جمل', 'ديك رومي', 'سلمون', 'بروتين'],
@@ -1637,6 +1756,7 @@
       const g = effectiveGroups(r), miss = GROUP_ORDER.filter(k => !g[k]).map(k => GROUPS[k].name);
       lines.push(miss.length ? `ناقصني: ${miss.join('، ')}` : 'أكلي فيه كل المجموعات');
     }
+    if (r.meals.length) { const d = dayNutr(r); lines.push('الفيتامينات (من القيمة اليومية): ' + d.pct.map(n => `${n.n} ${Math.round(n.pct)}%`).join('، ')); }
     if (r.water) lines.push(`المية: ${cups(r.water)}`);
     if (r.ex.length) lines.push('الرياضة: ' + r.ex.map(x => { const e = exById(x.t); return e ? `${e.n} ${x.min} دقيقة` : ''; }).filter(Boolean).join('، '));
     if (r.note) lines.push('ملاحظات: ' + r.note);
@@ -1877,6 +1997,16 @@
       const k = mealKcal(m); row.children[2].textContent = k ? `${m.k > 0 ? '' : '~'}${fmt0(k)}` : '';
       box.appendChild(row);
     });
+    // vitamins summary (4 key ones)
+    $('tNutrCard').style.display = r.meals.length ? '' : 'none';
+    if (r.meals.length) {
+      const d = dayNutr(r), box = $('tNutr'); box.innerHTML = '';
+      d.pct.filter(n => ['c', 'a', 'ca', 'fe'].includes(n.id)).forEach(n => {
+        const p = Math.round(n.pct), row = document.createElement('div'); row.className = 'nrow';
+        row.innerHTML = `<div class="nh"><span>${n.n}</span><b class="${p >= 100 ? 'full' : p < 30 ? 'low' : ''}">${p}%</b></div><div class="bar"><i class="${p >= 100 ? 'done' : ''}" style="width:${Math.min(p, 100)}%"></i></div>`;
+        box.appendChild(row);
+      });
+    }
     const [ic, tip] = topTip(r, need, total);
     $('tTipIc').textContent = ic; $('tTip').textContent = tip;
   }
