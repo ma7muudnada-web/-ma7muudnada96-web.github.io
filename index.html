@@ -132,6 +132,46 @@
   .tab.on { color: var(--accent); }
   .view { display: none; } .view.on { display: block; }
 
+  /* ---- phase 2: log ---- */
+  .secondary {
+    width: 100%; font: inherit; font-size: 16px; font-weight: 700; margin-top: 14px;
+    padding: 11px; border-radius: 10px; cursor: pointer;
+    background: transparent; color: var(--accent); border: 1.5px solid var(--accent);
+    transition: transform .08s ease;
+  }
+  .secondary:active { transform: scale(0.98); }
+  .secondary:disabled { opacity: .55; cursor: default; }
+  .progress-line { font-size: 14px; margin: -6px 0 16px; color: var(--muted); }
+  .progress-line b { color: var(--text); }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
+  .stat { background: var(--soft); border-radius: 10px; padding: 10px 8px; text-align: center; }
+  .stat .lab { font-size: 12px; color: var(--muted); }
+  .stat .num { font-size: 19px; font-weight: 700; direction: ltr; }
+  .stat .num small { font-size: 12px; font-weight: 400; color: var(--muted); }
+  .stat .num.down { color: var(--ok); } .stat .num.up { color: var(--warn); }
+  .chart-box { border: 1px solid var(--line); border-radius: 12px; padding: 10px 6px 4px; margin-bottom: 16px; }
+  #chart { width: 100%; height: auto; display: block; direction: ltr; }
+  #chart text { font-family: "Cairo", sans-serif; font-size: 10px; fill: var(--muted); }
+  .legend { display: flex; gap: 14px; justify-content: center; font-size: 12px; color: var(--muted); padding: 2px 0 6px; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; vertical-align: middle; margin-left: 4px; }
+  .entries { list-style: none; margin: 0; padding: 0; }
+  .entries li { display: flex; align-items: center; gap: 10px; padding: 11px 2px; border-bottom: 1px solid var(--line); }
+  .entries .d { flex: 1; font-size: 14px; color: var(--muted); }
+  .entries .wt { font-size: 17px; font-weight: 700; }
+  .entries .ch { font-size: 13px; min-width: 54px; text-align: left; direction: ltr; }
+  .entries .ch.down { color: var(--ok); } .entries .ch.up { color: var(--warn); }
+  .del { background: none; border: none; color: var(--muted); font-size: 20px; line-height: 1; cursor: pointer; padding: 4px 6px; border-radius: 6px; }
+  .del.armed { color: #fff; background: var(--bad); font-size: 13px; font-family: inherit; font-weight: 700; padding: 5px 8px; }
+  .add-row { display: flex; gap: 8px; }
+  .add-row > * { flex: 1; }
+  .add-row input[type=date] { padding: 10px 8px; font-size: 16px; }
+  details.box { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-top: 16px; }
+  details.box summary { font-weight: 700; cursor: pointer; font-size: 15px; }
+  details.box p { font-size: 13px; color: var(--muted); line-height: 1.7; }
+  textarea { width: 100%; min-height: 90px; font: 13px/1.5 ui-monospace, Menlo, monospace; direction: ltr; text-align: left;
+    border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--text); padding: 10px; }
+  .row2 { display: flex; gap: 8px; } .row2 .secondary { margin-top: 8px; }
+
   @media (max-width: 520px) {
     body { padding: 0 0 90px; background: var(--card); }
     .card { max-width: none; min-height: 100vh; border: none; border-radius: 0; padding: 22px 18px 32px; }
@@ -167,6 +207,7 @@
         <span id="profileSummary"></span>
         <button class="linkbtn" type="button" data-go="profile">تعديل</button>
       </div>
+      <div class="progress-line" id="progressLine"></div>
       <form id="f" novalidate>
         <div class="field">
           <label for="w">الوزن</label>
@@ -190,6 +231,8 @@
           </svg>
         </div>
         <p class="range" id="range"></p>
+        <button class="secondary" type="button" id="saveLog">سجّل الوزن ده في سجلي</button>
+        <div class="saved" id="logMsg"></div>
       </div>
 
       <div class="cal" id="cal">
@@ -210,7 +253,49 @@
   <!-- Log (phase 2) -->
   <section class="view" id="v-log">
     <h1>سجلي</h1>
-    <div class="soon"><div class="big">📈</div>سجل الوزن والرسم البياني جايين في التحديث الجاي.</div>
+    <p class="sub">كل الأوزان اللي سجلتها، محفوظة على موبايلك.</p>
+
+    <div id="logEmpty" class="soon">
+      <div class="big">📈</div>
+      لسه ما سجلتش أي وزن.<br>احسب وزنك من الرئيسية ودوس "سجّل الوزن ده في سجلي"، أو أضف وزن من تحت.
+    </div>
+
+    <div id="logMain" style="display:none">
+      <div class="stats">
+        <div class="stat"><div class="lab">البداية</div><div class="num" id="sStart"></div></div>
+        <div class="stat"><div class="lab">دلوقتي</div><div class="num" id="sNow"></div></div>
+        <div class="stat"><div class="lab">التغيير</div><div class="num" id="sDiff"></div></div>
+      </div>
+      <div class="chart-box">
+        <svg id="chart" viewBox="0 0 340 200" aria-label="رسم بياني للوزن"></svg>
+        <div class="legend"><span><i style="background:var(--accent)"></i>وزنك</span><span><i style="background:rgba(79,179,122,.35)"></i>الوزن الطبيعي</span></div>
+        <div class="legend" id="offNote" style="padding-top:0"></div>
+      </div>
+      <ul class="entries" id="entries"></ul>
+    </div>
+
+    <details class="box" id="addBox">
+      <summary>إضافة وزن بتاريخ معيّن</summary>
+      <p>لو عندك أوزان قديمة تحب تسجلها. لو اليوم ده متسجل قبل كده، الوزن الجديد هيحل محل القديم.</p>
+      <div class="add-row">
+        <input id="addDate" type="date">
+        <div class="inwrap"><input id="addW" type="number" inputmode="decimal" step="0.1" placeholder="الوزن"><span class="unit">كجم</span></div>
+      </div>
+      <button class="secondary" type="button" id="addBtn">إضافة</button>
+      <div class="err" id="addErr"></div>
+    </details>
+
+    <details class="box" id="backupBox">
+      <summary>نسخة احتياطية</summary>
+      <p>البيانات محفوظة على الموبايل ده بس. لو هتغيّر الموبايل أو هتمسح بيانات Safari، انسخ الكود ده واحفظه في الملاحظات أو ابعته لنفسك. وبعدين الزقه هنا ودوس "استرجاع".</p>
+      <div class="row2">
+        <button class="secondary" type="button" id="copyBk">نسخ الكود</button>
+        <button class="secondary" type="button" id="restoreBk">استرجاع</button>
+      </div>
+      <textarea id="bkText" placeholder="الزق الكود هنا للاسترجاع"></textarea>
+      <div class="saved" id="bkMsg"></div>
+      <div class="err" id="bkErr"></div>
+    </details>
   </section>
 
   <!-- Profile -->
@@ -287,6 +372,7 @@
     document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.tab === name));
     if (name === 'profile') fillProfileForm();
     if (name === 'home') renderHome();
+    if (name === 'log') renderLog();
     window.scrollTo(0, 0);
   }
   document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => showTab(t.dataset.tab)));
@@ -368,7 +454,157 @@
     $('profileSummary').textContent = `${fmt(p.h)} سم · ${p.a} سنة · ${p.sex === 'm' ? 'ذكر' : 'أنثى'} · ${ACT_NAMES[String(p.act)] || ''}`;
     const last = store.get('bmi.lastWeight');
     if (last && !$('w').value) $('w').value = last;
+    const log = getLog();
+    if (log.length >= 2) {
+      const d = log[log.length - 1].w - log[0].w;
+      $('progressLine').innerHTML = `من أول تسجيل (${dShow(log[0].d)}): <b>${d < 0 ? 'نزلت' : d > 0 ? 'زدت' : 'ثابت'} ${d ? fmt(Math.abs(d)) + ' كجم' : ''}</b>`;
+    } else $('progressLine').textContent = '';
   }
+
+  // ---------- log ----------
+  let memLog = null;
+  const pad = n => String(n).padStart(2, '0');
+  const todayISO = () => { const t = new Date(); return `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`; };
+  const dShow = iso => { const [y, m, d] = iso.split('-'); return `${+d}/${+m}/${y}`; };
+  const dShort = iso => { const [, m, d] = iso.split('-'); return `${+d}/${+m}`; };
+  const dTime = iso => new Date(iso + 'T12:00:00').getTime();
+  function getLog() {
+    const l = memLog || store.get('bmi.log');
+    return Array.isArray(l) ? l.filter(e => e && /^\d{4}-\d{2}-\d{2}$/.test(e.d) && e.w > 0).sort((a, b) => a.d < b.d ? -1 : 1) : [];
+  }
+  function setLog(l) { if (!store.set('bmi.log', l)) memLog = l; }
+  function upsert(d, w) {
+    const l = getLog().filter(e => e.d !== d);
+    l.push({ d, w: Math.round(w * 10) / 10 });
+    setLog(l);
+  }
+
+  $('saveLog').addEventListener('click', () => {
+    const w = parseFloat($('w').value); if (!(w >= 10 && w <= 400)) return;
+    const existed = getLog().some(e => e.d === todayISO());
+    upsert(todayISO(), w);
+    $('saveLog').disabled = true;
+    $('logMsg').textContent = existed ? 'اتحدّث وزن النهارده في سجلي ✓' : 'اتسجل في سجلي ✓';
+    renderHome();
+  });
+
+  $('addDate').value = todayISO();
+  $('addDate').max = todayISO();
+  $('addBtn').addEventListener('click', () => {
+    const d = $('addDate').value, w = parseFloat($('addW').value);
+    $('addErr').textContent = '';
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) { $('addErr').textContent = 'اختار التاريخ.'; return; }
+    if (d > todayISO()) { $('addErr').textContent = 'التاريخ ما ينفعش يكون في المستقبل.'; return; }
+    if (!(w >= 10 && w <= 400)) { $('addErr').textContent = 'اكتب الوزن بالكيلو (مثلاً 70).'; return; }
+    upsert(d, w); $('addW').value = '';
+    if (document.activeElement) document.activeElement.blur();
+    renderLog();
+  });
+
+  function renderLog() {
+    const log = getLog();
+    $('logEmpty').style.display = log.length ? 'none' : '';
+    $('logMain').style.display = log.length ? '' : 'none';
+    if (!log.length) return;
+    const first = log[0], last = log[log.length - 1], diff = last.w - first.w;
+    $('sStart').innerHTML = `${fmt(first.w)} <small>كجم</small>`;
+    $('sNow').innerHTML = `${fmt(last.w)} <small>كجم</small>`;
+    const sd = $('sDiff');
+    sd.className = 'num' + (diff < 0 ? ' down' : diff > 0 ? ' up' : '');
+    sd.innerHTML = `${diff > 0 ? '+' : diff < 0 ? '−' : ''}${fmt(Math.abs(diff))} <small>كجم</small>`;
+    drawChart(log);
+
+    const ul = $('entries'); ul.innerHTML = '';
+    log.slice().reverse().forEach((e, i, arr) => {
+      const prev = arr[i + 1];
+      const ch = prev ? e.w - prev.w : null;
+      const li = document.createElement('li');
+      li.innerHTML = `<span class="d">${dShow(e.d)}</span>
+        <span class="ch ${ch < 0 ? 'down' : ch > 0 ? 'up' : ''}">${ch === null ? '' : (ch > 0 ? '+' : ch < 0 ? '−' : '') + fmt(Math.abs(ch))}</span>
+        <span class="wt">${fmt(e.w)}</span>
+        <button class="del" type="button" aria-label="مسح">×</button>`;
+      const del = li.querySelector('.del');
+      let t;
+      del.addEventListener('click', () => {
+        if (!del.classList.contains('armed')) {
+          del.classList.add('armed'); del.textContent = 'مسح؟';
+          t = setTimeout(() => { del.classList.remove('armed'); del.textContent = '×'; }, 3000);
+        } else {
+          clearTimeout(t);
+          setLog(getLog().filter(x => x.d !== e.d));
+          renderLog();
+        }
+      });
+      ul.appendChild(li);
+    });
+  }
+
+  function drawChart(log) {
+    const svg = $('chart'); svg.innerHTML = '';
+    const W = 340, H = 200, L = 34, Rm = 12, T = 12, B = 26;
+    const p = profile || memProfile;
+    const ws = log.map(e => e.w);
+    let lo = Math.min(...ws), hi = Math.max(...ws);
+    let minW = null, maxW = null;
+    if (p) { const m2 = (p.h / 100) ** 2; minW = 18.5 * m2; maxW = 24.9 * m2; }
+    // Zoom on the user's own weights; pull in a normal-range edge only if it is close
+    if (maxW !== null && maxW < lo && lo - maxW <= 3) lo = maxW;
+    if (minW !== null && minW > hi && minW - hi <= 3) hi = minW;
+    lo -= 1; hi += 1;
+    if (hi - lo < 4) { const c = (hi + lo) / 2; lo = c - 2; hi = c + 2; }
+    lo = Math.floor(lo); { const step = Math.max(1, Math.ceil((Math.ceil(hi) - lo) / 4)); hi = lo + 4 * step; }
+    const t0 = dTime(log[0].d), t1 = dTime(log[log.length - 1].d);
+    const X = t => log.length === 1 || t1 === t0 ? (L + W - Rm) / 2 : L + (t - t0) / (t1 - t0) * (W - L - Rm);
+    const Y = v => T + (hi - v) / (hi - lo) * (H - T - B);
+    const el = (n, a, txt) => { const e = document.createElementNS(NS, n); for (const k in a) e.setAttribute(k, a[k]); if (txt != null) e.textContent = txt; svg.appendChild(e); return e; };
+
+    if (minW !== null) {
+      const yTop = Y(Math.min(maxW, hi)), yBot = Y(Math.max(minW, lo));
+      if (yBot > yTop) el('rect', { x: L, y: yTop, width: W - L - Rm, height: yBot - yTop, fill: 'rgba(79,179,122,.18)' });
+    }
+    const offNote = maxW !== null && maxW < lo ? `الوزن الطبيعي تحت: أقل من ${fmt(maxW)} كجم ↓`
+                  : minW !== null && minW > hi ? `الوزن الطبيعي فوق: من ${fmt(minW)} كجم ↑` : '';
+    for (let i = 0; i <= 4; i++) {
+      const v = lo + (hi - lo) * i / 4, y = Y(v);
+      el('line', { x1: L, x2: W - Rm, y1: y, y2: y, stroke: 'currentColor', 'stroke-opacity': .1 });
+      el('text', { x: L - 6, y: y + 3, 'text-anchor': 'end' }, fmt0(v));
+    }
+    const pts = log.map(e => [X(dTime(e.d)), Y(e.w)]);
+    if (pts.length > 1) el('polyline', { points: pts.map(p => p.join(',')).join(' '), fill: 'none', stroke: 'var(--accent)', 'stroke-width': 2.5, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' });
+    pts.forEach((q, i) => el('circle', { cx: q[0], cy: q[1], r: i === pts.length - 1 ? 5 : 3.5, fill: i === pts.length - 1 ? 'var(--accent)' : 'var(--card)', stroke: 'var(--accent)', 'stroke-width': 2 }));
+    const lastP = pts[pts.length - 1];
+    el('text', { x: Math.min(Math.max(lastP[0], L + 14), W - Rm - 14), y: lastP[1] - 10, 'text-anchor': 'middle', style: 'font-weight:700;fill:var(--text);font-size:11px' }, fmt(ws[ws.length - 1]));
+    const idx = log.length === 1 ? [0] : log.length === 2 ? [0, 1] : [0, Math.floor((log.length - 1) / 2), log.length - 1];
+    idx.forEach((i, k) => el('text', { x: pts[i][0], y: H - 8, 'text-anchor': log.length === 1 ? 'middle' : k === 0 ? 'start' : k === idx.length - 1 ? 'end' : 'middle' }, dShort(log[i].d)));
+    svg.style.color = 'var(--text)';
+    $('offNote').textContent = offNote;
+  }
+
+  // ---------- backup ----------
+  function backupText() { return JSON.stringify({ app: 'bmi', v: 1, profile: profile || memProfile || null, log: getLog() }); }
+  $('backupBox').addEventListener('toggle', () => { if ($('backupBox').open) { $('bkMsg').textContent = ''; $('bkErr').textContent = ''; } });
+  $('copyBk').addEventListener('click', async () => {
+    const txt = backupText();
+    $('bkText').value = txt; $('bkErr').textContent = '';
+    let ok = false;
+    try { await navigator.clipboard.writeText(txt); ok = true; } catch (_) {
+      try { $('bkText').select(); ok = document.execCommand('copy'); } catch (__) {}
+    }
+    $('bkMsg').textContent = ok ? 'اتنسخ ✓ الزقه في الملاحظات أو ابعته لنفسك.' : 'الكود ظهر في الخانة تحت. انسخه بإيدك.';
+  });
+  $('restoreBk').addEventListener('click', () => {
+    $('bkMsg').textContent = ''; $('bkErr').textContent = '';
+    let data;
+    try { data = JSON.parse($('bkText').value.trim()); } catch (_) { data = null; }
+    if (!data || data.app !== 'bmi' || !Array.isArray(data.log)) { $('bkErr').textContent = 'الكود ده مش صحيح. اتأكد إنك لزقته كله.'; return; }
+    const clean = data.log.filter(e => e && /^\d{4}-\d{2}-\d{2}$/.test(e.d) && e.w >= 10 && e.w <= 400).map(e => ({ d: e.d, w: Math.round(e.w * 10) / 10 }));
+    setLog(clean);
+    if (data.profile && data.profile.h && data.profile.a && data.profile.sex && data.profile.act) {
+      if (store.set('bmi.profile', data.profile)) profile = data.profile; else memProfile = data.profile;
+    }
+    $('bkMsg').textContent = `اترجع ${clean.length} تسجيل ✓`;
+    renderLog();
+  });
 
   function revealResult() {
     if (document.activeElement) document.activeElement.blur();
@@ -381,6 +617,7 @@
     const w = parseFloat($('w').value), h = p.h, a = p.a;
     const res = $('res'), cal = $('cal');
     $('err').textContent = ''; res.className = 'result'; cal.className = 'cal';
+    $('saveLog').disabled = false; $('logMsg').textContent = '';
     if (!(w >= 10 && w <= 400)) { $('err').textContent = 'اكتب الوزن بالكيلو (مثلاً 70).'; return; }
     store.set('bmi.lastWeight', w);
 
