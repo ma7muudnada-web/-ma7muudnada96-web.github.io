@@ -194,6 +194,14 @@
   .meal .mw { flex: 1; font-size: 15px; line-height: 1.5; word-break: break-word; }
   .meal .mk { font-size: 14px; font-weight: 700; white-space: nowrap; }
   .meal .mk small { font-weight: 400; color: var(--muted); font-size: 11px; }
+  .meal .bd { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; line-height: 1.5; }
+  .est { font-size: 13px; color: var(--muted); margin: -4px 0 10px; line-height: 1.6; min-height: 1em; }
+  .est b { color: var(--text); font-size: 15px; }
+  .est .warn { color: var(--warn); }
+  .foods-tbl { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+  .foods-tbl td { padding: 6px 2px; border-bottom: 1px solid var(--line); }
+  .foods-tbl td:last-child { text-align: left; white-space: nowrap; font-weight: 700; }
+  .foods-tbl td:nth-child(2) { color: var(--muted); }
   .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
   .chip { background: var(--bg); border: 1px solid var(--line); color: var(--text); border-radius: 999px; padding: 6px 14px; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
   .chip.on { background: var(--btn); border-color: var(--btn); color: #fff; }
@@ -386,14 +394,22 @@
           <button type="button" class="chip" data-v="عشا">عشا</button>
           <button type="button" class="chip" data-v="سناك">سناك</button>
         </div>
-        <textarea id="mealWhat" placeholder="أكلت إيه؟ مثلاً: 2 بيض، عيش بلدي، فول"></textarea>
+        <textarea id="mealWhat" placeholder="أكلت إيه؟ مثلاً: 2 بيض، رغيف عيش، طبق فول بالزيت"></textarea>
+        <div class="est" id="mealEst"></div>
         <div class="two">
           <div class="field"><label for="mealTime">الساعة</label><input id="mealTime" type="time"></div>
-          <div class="field"><label for="mealK">السعرات (لو تعرفها)</label>
-            <div class="inwrap"><input id="mealK" type="number" inputmode="numeric" step="1" placeholder="اختياري"><span class="unit">سعر</span></div></div>
+          <div class="field"><label for="mealK">السعرات بالظبط</label>
+            <div class="inwrap"><input id="mealK" type="number" inputmode="numeric" step="1" placeholder="تلقائي"><span class="unit">سعر</span></div></div>
         </div>
         <button class="primary" type="button" id="mealAdd" style="margin-top:12px">إضافة</button>
         <div class="err" id="mealErr"></div>
+      </details>
+
+      <details class="box" id="foodsBox">
+        <summary>الأكلات اللي التطبيق بيحسب سعراتها</summary>
+        <p>اكتب الكمية قبل الأكلة، زي "2 بيض" أو "رغيفين عيش" أو "نص كوباية رز". من غير رقم بيحسبها واحدة. الزيت والسكر بيتحسبوا لوحدهم لو كتبتهم.</p>
+        <table class="foods-tbl" id="foodsTbl"></table>
+        <p>الأرقام من وزارة الزراعة الأمريكية (USDA): جدول Nutritive Value of Foods وقاعدة FoodData Central. اللي عليه * أنا حسبته منهم لكمية مختلفة. الأرقام تقريبية وبتختلف حسب الطبخ والحجم.</p>
       </details>
     </div>
 
@@ -815,7 +831,7 @@
   function resetMealForm() {
     mealType = guessMealType();
     document.querySelectorAll('#mealType .chip').forEach(x => x.classList.toggle('on', x.dataset.v === mealType));
-    $('mealWhat').value = ''; $('mealK').value = ''; $('mealErr').textContent = '';
+    $('mealWhat').value = ''; $('mealK').value = ''; $('mealErr').textContent = ''; $('mealEst').innerHTML = '';
     const t = new Date(); $('mealTime').value = curDay === todayISO() ? `${pad(t.getHours())}:${pad(t.getMinutes())}` : '';
   }
 
@@ -839,7 +855,13 @@
       row.querySelector('.mt b').textContent = m.type;
       row.querySelector('.mt span').textContent = m.t || '';
       row.querySelector('.mw').textContent = m.what;
-      row.querySelector('.mk').innerHTML = m.k ? `${fmt0(m.k)} <small>سعر</small>` : '';
+      const est = estimateMeal(m.what);
+      row.querySelector('.mk').innerHTML = m.k ? `${fmt0(m.k)} <small>سعر</small>` : est.total ? `~${fmt0(est.total)} <small>سعر</small>` : '';
+      if (!m.k && (est.items.length || est.unknown.length)) {
+        const sub = document.createElement('small'); sub.className = 'bd';
+        sub.textContent = (est.items.length ? breakdownText(est) : '') + (est.unknown.length ? `${est.items.length ? ' · ' : ''}مش متحسب: ${est.unknown.join('، ')}` : '');
+        row.querySelector('.mw').appendChild(sub);
+      }
       const del = row.querySelector('.del'); let tm;
       del.addEventListener('click', () => {
         if (!del.classList.contains('armed')) {
@@ -853,7 +875,8 @@
       box.appendChild(row);
     });
 
-    const withK = meals.filter(m => m.k > 0), total = withK.reduce((s, m) => s + m.k, 0), missing = meals.length - withK.length;
+    const withK = meals.filter(m => mealKcal(m) > 0), total = withK.reduce((s, m) => s + mealKcal(m), 0);
+    const missing = meals.filter(m => !(m.k > 0) && (mealKcal(m) === 0 || estimateMeal(m.what).unknown.length)).length;
     const need = dailyNeed();
     $('totalsBox').style.display = withK.length ? '' : 'none';
     $('kTotal').textContent = fmt0(total) + ' سعر';
@@ -861,12 +884,181 @@
     $('kBarWrap').style.display = withK.length && need ? '' : 'none';
     if (need) { const pct = total / need.target * 100; $('kBar').style.width = Math.min(pct, 100) + '%'; $('kBar').classList.toggle('over', pct > 100); }
     renderAdvice(r, sm, meals, withK.length ? total : null, need);
-    $('kNote').textContent = missing && withK.length ?`فيه ${missing === 1 ? 'أكلة' : mealsN(missing)} من غير سعرات، فالإجمالي أقل من الحقيقي.` : '';
+    $('kNote').textContent = missing && withK.length ? `فيه ${missing === 1 ? 'أكلة' : mealsN(missing)} فيها حاجات التطبيق مش عارف سعراتها، فالإجمالي أقل من الحقيقي. اكتب السعرات بإيدك لو تعرفها.` : '';
     renderPastDays();
   }
 
-  // ---------- daily advice ----------
+  // ---------- food calories ----------
   const norm = s => s.replace(/[ً-ٰٟ]/g, '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/ـ/g, '');
+  // kcal per unit. src: H = USDA "Nutritive Value of Foods" (HG-72, 2002) item no.; F = USDA FoodData Central;
+  // d = derived by me from a USDA value (scaled to a different portion or summed).
+  const FOODS = [
+    // eggs (specific first)
+    { k: ['بيض مقلي', 'بيض عيون', 'عيون'], n: 'بيض مقلي', u: 'بيضة', c: 92, s: 'H145' },
+    { k: ['اومليت', 'بيض مخفوق', 'اسكرامبل', 'بيض بالبسطرمه'], n: 'أومليت / بيض مخفوق', u: 'بيضة', c: 101, s: 'H149' },
+    { k: ['بيض', 'بيضه'], n: 'بيض مسلوق', u: 'بيضة', c: 78, s: 'H146' },
+    // breads & starches
+    { k: ['عيش', 'رغيف', 'خبز', 'عيش بلدي', 'عيش شامي', 'بيتا'], n: 'عيش (رغيف بيتا 60 جم)', u: 'رغيف', c: 165, s: 'H404' },
+    { k: ['توست', 'عيش توست'], n: 'توست أبيض', u: 'شريحة', c: 67, s: 'H415' },
+    { k: ['رز بني', 'ارز بني'], n: 'رز بني مطبوخ', u: 'كوباية', c: 216, s: 'H634' },
+    { k: ['رز', 'ارز'], n: 'رز أبيض مطبوخ', u: 'كوباية', c: 205, s: 'H636' },
+    { k: ['مكرونه', 'اسباجتي', 'معكرونه'], n: 'مكرونة مسلوقة', u: 'كوباية', c: 197, s: 'H646' },
+    { k: ['شوفان'], n: 'شوفان مطبوخ', u: 'كوباية', c: 145, s: 'H433' },
+    { k: ['بطاطس محمره', 'بطاطس مقليه', 'فرايز', 'فرنش فرايز'], n: 'بطاطس محمرة', u: '10 أصابع', c: 100, s: 'H1171' },
+    { k: ['بطاطس فرن', 'بطاطس مشويه'], n: 'بطاطس في الفرن', u: 'حبة', c: 220, s: 'H1163' },
+    { k: ['بطاطس'], n: 'بطاطس مسلوقة', u: 'حبة', c: 118, s: 'H1166' },
+    { k: ['شيبسي', 'شيبس', 'chips'], n: 'شيبسي', u: 'كيس 28 جم', c: 152, s: 'H1257' },
+    // protein
+    { k: ['صدر فراخ', 'صدور فراخ', 'فراخ', 'فرخه', 'دجاج', 'صدر'], n: 'فراخ (نص صدر)', u: 'نص صدر', c: 142, s: 'H876' },
+    { k: ['ورك', 'وراك', 'ورك فراخ'], n: 'ورك فراخ', u: 'ورك', c: 109, s: 'H878' },
+    { k: ['دبوس', 'دبابيس'], n: 'دبوس فراخ', u: 'دبوس', c: 76, s: 'H877' },
+    { k: ['كفته', 'برجر', 'لحمه مفرومه', 'مفروم', 'بيف برجر'], n: 'لحمة مفرومة / كفتة', u: '85 جم', c: 218, s: 'H739' },
+    { k: ['كبده', 'كبد'], n: 'كبدة', u: '85 جم', c: 184, s: 'H742' },
+    { k: ['لحمه', 'لحم', 'ستيك', 'بفتيك'], n: 'لحمة', u: '85 جم', c: 219, s: 'H747' },
+    { k: ['تونه بالزيت', 'تونه زيت'], n: 'تونة بالزيت (مصفّاة)', u: '85 جم', c: 168, s: 'H260' },
+    { k: ['تونه'], n: 'تونة بالمية (مصفّاة)', u: '85 جم', c: 99, s: 'H261' },
+    { k: ['جمبري'], n: 'جمبري مقلي', u: '6-8 حبات', c: 454, s: 'H859' },
+    { k: ['سمك', 'فيليه', 'بلطي', 'بوري'], n: 'سمك مشوي', u: '85 جم', c: 89, s: 'H215' },
+    { k: ['فول'], n: 'فول مدمس (من غير زيت)', u: 'كوباية', c: 187, s: 'F173798' },
+    { k: ['طعميه', 'فلافل'], n: 'طعمية', u: 'قرص', c: 57, s: 'F172455' },
+    { k: ['عدس'], n: 'عدس مطبوخ', u: 'كوباية', c: 230, s: 'H703' },
+    { k: ['حمص بطحينه', 'حمص بالطحينه', 'هموس'], n: 'حمص بطحينة', u: 'معلقة', c: 23, s: 'H702' },
+    { k: ['حمص'], n: 'حمص مسلوق', u: 'كوباية', c: 269, s: 'H695' },
+    { k: ['فاصوليا حمرا', 'فاصوليا ناشفه'], n: 'فاصوليا حمرا مطبوخة', u: 'كوباية', c: 225, s: 'H676' },
+    { k: ['سوداني', 'فول سوداني'], n: 'فول سوداني', u: '28 جم (حفنة)', c: 166, s: 'H708' },
+    { k: ['لوز'], n: 'لوز', u: '28 جم (24 حبة)', c: 164, s: 'H673' },
+    { k: ['عين جمل'], n: 'عين جمل', u: '28 جم (14 نص)', c: 185, s: 'H734' },
+    // dairy
+    { k: ['لبن بالشوكولاته', 'شوكو لبن'], n: 'لبن بالشوكولاتة', u: 'كوباية', c: 208, s: 'H128' },
+    { k: ['لبن', 'حليب'], n: 'لبن كامل الدسم', u: 'كوباية', c: 150, s: 'H118' },
+    { k: ['زبادي', 'رايب'], n: 'زبادي (علبة 105 جم)', u: 'علبة', c: 64, s: 'dH138' },
+    { k: ['جبنه قريش', 'قريش'], n: 'جبنة قريش (زي الكوتاج)', u: 'كوباية', c: 217, s: 'H58' },
+    { k: ['جبنه بيضا', 'جبنه فيتا', 'فيتا', 'دمياطي', 'استانبولي'], n: 'جبنة بيضا (فيتا)', u: '28 جم', c: 75, s: 'H67' },
+    { k: ['موتزاريلا'], n: 'موتزاريلا', u: '28 جم', c: 80, s: 'H69' },
+    { k: ['شيدر', 'جبنه رومي', 'رومي'], n: 'جبنة شيدر / رومي', u: '28 جم', c: 114, s: 'H54' },
+    { k: ['جبنه مطبوخه', 'جبنه نستو', 'جبنه مثلثات', 'مثلثات', 'جبنه شرايح'], n: 'جبنة مطبوخة', u: '28 جم', c: 106, s: 'H80' },
+    { k: ['جبنه', 'جبن'], n: 'جبنة بيضا (فيتا)', u: '28 جم', c: 75, s: 'H67' },
+    { k: ['ايس كريم', 'آيس كريم', 'جيلاتي'], n: 'آيس كريم فانيليا', u: 'نص كوباية', c: 133, s: 'H112' },
+    // fats & sweets
+    { k: ['زيت زيتون'], n: 'زيت زيتون', u: 'معلقة كبيرة', c: 119, s: 'H176' },
+    { k: ['زيت'], n: 'زيت', u: 'معلقة كبيرة', c: 124, s: 'H172' },
+    { k: ['زبده', 'سمنه'], n: 'زبدة', u: 'معلقة كبيرة', c: 102, s: 'H152' },
+    { k: ['مايونيز', 'مايونيزه'], n: 'مايونيز', u: 'معلقة كبيرة', c: 99, s: 'H197' },
+    { k: ['عسل'], n: 'عسل', u: 'معلقة كبيرة', c: 64, s: 'H1004' },
+    { k: ['سكر'], n: 'سكر', u: 'معلقة صغيرة', c: 16, s: 'H1025' },
+    // fruit
+    { k: ['تفاح', 'تفاحه'], n: 'تفاحة', u: 'حبة متوسطة', c: 81, s: 'H264' },
+    { k: ['موز', 'موزه'], n: 'موزة', u: 'حبة متوسطة', c: 109, s: 'H280' },
+    { k: ['برتقال', 'برتقانه', 'برتقاله'], n: 'برتقانة', u: 'حبة متوسطة', c: 62, s: 'H327' },
+    { k: ['يوسفي', 'يوسفيه', 'كلمنتينا'], n: 'يوسفي', u: 'حبة', c: 37, s: 'H375' },
+    { k: ['عنب'], n: 'عنب', u: '10 حبات', c: 36, s: 'H306' },
+    { k: ['بطيخ'], n: 'بطيخ', u: 'شقة', c: 92, s: 'H378' },
+    { k: ['شمام', 'كنتالوب'], n: 'شمام', u: 'شقة (تمن الحباية)', c: 24, s: 'H321' },
+    { k: ['فراوله'], n: 'فراولة', u: 'كوباية', c: 50, s: 'H373' },
+    { k: ['مانجا', 'مانجو'], n: 'مانجا', u: 'حبة', c: 135, s: 'H319' },
+    { k: ['بلح', 'تمر', 'تمره', 'بلحه'], n: 'بلح / تمر', u: 'حباية', c: 23, s: 'dH292' },
+    { k: ['جوافه'], n: 'جوافة', u: 'حبة', c: 37, s: 'F173044' },
+    { k: ['كمثري'], n: 'كمثرى', u: 'حبة', c: 98, s: 'H345' },
+    { k: ['خوخ', 'خوخه'], n: 'خوخ', u: 'حبة', c: 42, s: 'H337' },
+    { k: ['مشمش'], n: 'مشمش', u: 'حبة', c: 17, s: 'H271' },
+    { k: ['كيوي'], n: 'كيوي', u: 'حبة', c: 46, s: 'H311' },
+    { k: ['اناناس'], n: 'أناناس', u: 'كوباية', c: 76, s: 'H350' },
+    { k: ['برقوق'], n: 'برقوق', u: 'حبة', c: 36, s: 'H358' },
+    { k: ['تين'], n: 'تين مجفف', u: 'حباية', c: 49, s: 'dH294' },
+    // vegetables
+    { k: ['سلطه خضرا', 'سلطه'], n: 'سلطة خضرا (من غير زيت)', u: 'طبق', c: 45, s: 'dH1124+1209+1106' },
+    { k: ['طماطم', 'قوطه', 'طماطمايه'], n: 'طماطم', u: 'حبة متوسطة', c: 26, s: 'H1209' },
+    { k: ['خيار', 'خياره'], n: 'خيار', u: 'حبة صغيرة (100 جم)', c: 12, s: 'dH1106' },
+    { k: ['خس'], n: 'خس', u: 'كوباية', c: 7, s: 'H1124' },
+    { k: ['جزر', 'جزره'], n: 'جزر', u: 'حبة', c: 31, s: 'H1079' },
+    { k: ['سبانخ'], n: 'سبانخ مطبوخة (من غير سمنة)', u: 'كوباية', c: 41, s: 'H1193' },
+    { k: ['بامي', 'باميه'], n: 'بامية مسلوقة (من غير سمنة)', u: 'كوباية', c: 51, s: 'H1135' },
+    { k: ['كوسه'], n: 'كوسة مسلوقة', u: 'كوباية', c: 36, s: 'H1197' },
+    { k: ['باذنجان', 'بتنجان'], n: 'باذنجان مسلوق', u: 'كوباية', c: 28, s: 'H1111' },
+    { k: ['بسله'], n: 'بسلة مسلوقة', u: 'كوباية', c: 125, s: 'H1151' },
+    { k: ['فاصوليا خضرا', 'فاصوليا'], n: 'فاصوليا خضرا مسلوقة', u: 'كوباية', c: 44, s: 'H1049' },
+    { k: ['كرنب', 'ملفوف'], n: 'كرنب مسلوق', u: 'كوباية', c: 33, s: 'H1073' },
+    { k: ['بروكلي'], n: 'بروكلي مسلوق', u: 'كوباية', c: 44, s: 'H1067' },
+    { k: ['بصل'], n: 'بصل', u: 'كوباية مفروم', c: 61, s: 'H1137' },
+    // drinks
+    { k: ['عصير برتقال'], n: 'عصير برتقال فريش', u: 'كوباية', c: 112, s: 'H329' },
+    { k: ['عصير تفاح'], n: 'عصير تفاح', u: 'كوباية', c: 117, s: 'H267' },
+    { k: ['بيبسي', 'كوكاكولا', 'كولا', 'كوكا', 'سفن', 'سبرايت', 'حاجه ساقعه', 'بيبس'], n: 'مشروب غازي', u: 'كانز', c: 152, s: 'H14' },
+    { k: ['شاي'], n: 'شاي (من غير سكر)', u: 'فنجان', c: 2, s: 'H45' },
+    { k: ['قهوه', 'نسكافيه', 'اسبريسو'], n: 'قهوة (من غير سكر ولبن)', u: 'فنجان', c: 4, s: 'H29' }
+  ].map(f => ({ ...f, nk: f.k.map(norm).sort((a, b) => b.split(' ').length - a.split(' ').length) }));
+
+  // Dishes we don't have a reliable number for: warn so the user enters calories
+  const UNKNOWN_DISHES = ['ملوخيه', 'كشري', 'محشي', 'مسقعه', 'فته', 'بيتزا', 'شوكولاته', 'بسكوت', 'كرواسون', 'كيك', 'كيكه', 'جاتوه', 'حلويات', 'بسبوسه', 'كنافه', 'قطايف', 'شاورما', 'كريب', 'فطير', 'حواوشي', 'سندوتش', 'ساندويتش', 'مكرونه بشاميل', 'طاجن', 'رقاق', 'مهلبيه', 'ارز بلبن', 'رز بلبن', 'دونتس', 'عصير', 'نوتيلا', 'مربي', 'بسطرمه', 'لانشون', 'سوسيس'];
+
+  const NUMWORDS = { 'واحد': 1, 'واحده': 1, 'اتنين': 2, 'اثنين': 2, 'تلاته': 3, 'ثلاثه': 3, 'تلات': 3, 'اربعه': 4, 'اربع': 4, 'خمسه': 5, 'خمس': 5, 'سته': 6, 'ست': 6, 'سبعه': 7, 'تمانيه': 8, 'تسعه': 9, 'عشره': 10, 'نص': 0.5, 'نصف': 0.5, 'ربع': 0.25, 'تلت': 1 / 3 };
+  const UNITWORDS = ['رغيف', 'كوبايه', 'كوب', 'طبق', 'معلقه', 'حبه', 'حباية', 'حبايه', 'قطعه', 'شريحه', 'شرايح', 'علبه', 'كيس', 'فنجان', 'كانز', 'قرص', 'اقراص', 'صدر', 'ورك', 'سندوتش', 'صباع', 'صوابع', 'حته', 'حتت', 'كباية', 'كبايه', 'جم', 'جرام'];
+  const toNum = t => {
+    const d = t.replace(/[٠-٩]/g, x => '٠١٢٣٤٥٦٧٨٩'.indexOf(x)).replace(',', '.');
+    if (/^\d+(\.\d+)?$/.test(d)) return parseFloat(d);
+    if (/^\d+\/\d+$/.test(d)) { const [a, b] = d.split('/').map(Number); return b ? a / b : null; }
+    return NUMWORDS[t] ?? null;
+  };
+  const stripPrefix = t => t.replace(/^(و?بال|و?ال|و)(?=..)/, '');
+  const isDual = (t, word) => t.length > word.length && (t === word + 'ين' || t === word.replace(/ه$/, 'ت') + 'ين' || t === word + 'تين');
+
+  function estimateMeal(text) {
+    const raw = norm(text || '').replace(/[٠-٩]/g, x => '٠١٢٣٤٥٦٧٨٩'.indexOf(x));
+    const toks = raw.split(/[\s،,+\-()\\:]+/).filter(Boolean);
+    const base = toks.map(stripPrefix);
+    const used = new Array(toks.length).fill(false);
+    const items = [];
+    // look for quantity in the up-to-3 tokens before index i
+    const qtyBefore = i => {
+      for (let j = i - 1, steps = 0; j >= 0 && steps < 3; j--, steps++) {
+        if (used[j]) break;
+        const n = toNum(toks[j]) ?? toNum(base[j]);
+        if (n !== null) { used[j] = true; return n; }
+        const u = UNITWORDS.find(w => base[j] === w || isDual(base[j], w));
+        if (u) { used[j] = true; if (isDual(base[j], u)) return 2; continue; }
+        break;
+      }
+      return 1;
+    };
+    // multi-word keys first across all foods, then single words
+    const passes = [2, 1];
+    passes.forEach(minWords => {
+      FOODS.forEach(f => {
+        f.nk.filter(k => (k.split(' ').length >= 2) === (minWords === 2)).forEach(key => {
+          const kw = key.split(' ').map((w, x) => x ? stripPrefix(w) : w);
+          for (let i = 0; i + kw.length <= toks.length; i++) {
+            if (used.slice(i, i + kw.length).some(Boolean)) continue;
+            const wordOk = (t, w, first) => t === w || t === w + 'ه' || t + 'ه' === w || (first && isDual(t, w)) || (t.startsWith(w) && t.length <= w.length + 1 && w.length >= 3);
+            const okSeq = kw.every((w, x) => {
+              const t = base[i + x];
+              // "بسكر" = "ب" + "سكر" (with sugar)
+              return wordOk(t, w, x === 0) || (t.length > 3 && t[0] === 'ب' && wordOk(t.slice(1), w, false));
+            });
+            if (!okSeq) continue;
+            const dual = isDual(base[i], kw[0]);
+            let q = dual ? 2 : qtyBefore(i);
+            // quantity written after the food ("بيض 2")
+            const after = toks[i + kw.length];
+            if (!dual && q === 1 && after && !used[i + kw.length] && toNum(after) !== null) { q = toNum(after); used[i + kw.length] = true; }
+            for (let x = 0; x < kw.length; x++) used[i + x] = true;
+            const ex = items.find(it => it.f === f);
+            if (ex) ex.q += q; else items.push({ f, q });
+          }
+        });
+      });
+    });
+    const unknown = UNKNOWN_DISHES.filter(d => {
+      const dw = norm(d).split(' ');
+      return toks.some((t, i) => !used[i] && dw.every((w, x) => base[i + x] && (base[i + x] === w || base[i + x].startsWith(w))));
+    });
+    const total = Math.round(items.reduce((s, it) => s + it.q * it.f.c, 0));
+    return { total, items, unknown };
+  }
+  const fmtQ = q => Number.isInteger(q) ? String(q) : q === 0.5 ? 'نص' : q === 0.25 ? 'ربع' : fmt(q);
+  const mealKcal = m => m.k > 0 ? m.k : estimateMeal(m.what).total;
+  const breakdownText = est => est.items.map(it => `${fmtQ(it.q)} ${it.f.n} = ${fmt0(it.q * it.f.c)}`).join('، ');
+
+  // ---------- daily advice ----------
   const GROUPS = {
     protein: { name: 'بروتين', words: ['بيض', 'بيضه', 'فراخ', 'فرخه', 'دجاج', 'لحم', 'لحمه', 'كبده', 'سمك', 'تونه', 'جمبري', 'سردين', 'فول', 'عدس', 'حمص', 'فاصوليا', 'لوبيا', 'طعميه', 'فلافل', 'كفته', 'برجر', 'سجق', 'بانيه', 'شاورما', 'ستيك', 'كباب', 'مكسرات', 'لوز', 'سوداني', 'بندق', 'كاجو', 'عين جمل', 'ديك رومي', 'سلمون', 'بروتين'],
                tip: 'بيض، فول، عدس، فراخ، تونة، أو زبادي يوناني' },
@@ -945,7 +1137,7 @@
     const ul = $('pastDays'); ul.innerHTML = '';
     $('pastBox').style.display = keys.length ? '' : 'none';
     keys.forEach(k => {
-      const r = dayRec(k), sm = sleepMinutes(r), kc = r.meals.reduce((s, m) => s + (m.k > 0 ? m.k : 0), 0);
+      const r = dayRec(k), sm = sleepMinutes(r), kc = r.meals.reduce((s, m) => s + mealKcal(m), 0);
       const bits = [];
       if (sm !== null) bits.push('نوم ' + hmShort(sm));
       if (r.meals.length) bits.push(mealsN(r.meals.length));
@@ -966,6 +1158,25 @@
   $('dayNote').addEventListener('input', () => { const rec = dayRec(curDay); rec.note = $('dayNote').value; saveRec(curDay, rec); });
   $('dayNote').addEventListener('change', renderPastDays);
   $('mealBox').addEventListener('toggle', () => { if ($('mealBox').open) resetMealForm(); });
+  function updateEst() {
+    const est = estimateMeal($('mealWhat').value), box = $('mealEst');
+    if (!$('mealWhat').value.trim()) { box.innerHTML = ''; return; }
+    let h = est.items.length ? `التقدير: <b>~${fmt0(est.total)} سعر</b><br>${breakdownText(est)}` : 'مش لاقي أكلات أعرف سعراتها لسه.';
+    if (est.unknown.length) h += `<br><span class="warn">مش عارف سعرات: ${est.unknown.join('، ')}. لو تعرفها اكتب السعرات كلها بإيدك تحت.</span>`;
+    box.innerHTML = h;
+  }
+  $('mealWhat').addEventListener('input', updateEst);
+  (function fillFoodsTable() {
+    const t = $('foodsTbl');
+    FOODS.forEach(f => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = '<td></td><td></td><td></td>';
+      tr.children[0].textContent = f.n + (f.s.startsWith('d') ? ' *' : '');
+      tr.children[1].textContent = f.u;
+      tr.children[2].textContent = f.c + ' سعر';
+      t.appendChild(tr);
+    });
+  })();
   $('mealAdd').addEventListener('click', () => {
     const what = $('mealWhat').value.trim(), k = parseFloat($('mealK').value);
     $('mealErr').textContent = '';
@@ -985,8 +1196,8 @@
     if (r.meals.length) {
       lines.push('الأكل:');
       r.meals.slice().sort((a, b) => (a.t || '99') < (b.t || '99') ? -1 : 1)
-        .forEach(m => lines.push(`- ${m.type}${m.t ? ' ' + m.t : ''}: ${m.what}${m.k ? ` (${m.k} سعر)` : ''}`));
-      const kc = r.meals.reduce((s, m) => s + (m.k > 0 ? m.k : 0), 0), need = dailyNeed();
+        .forEach(m => { const kc = mealKcal(m); lines.push(`- ${m.type}${m.t ? ' ' + m.t : ''}: ${m.what}${kc ? ` (${m.k > 0 ? '' : 'حوالي '}${Math.round(kc)} سعر)` : ''}`); });
+      const kc = r.meals.reduce((s, m) => s + mealKcal(m), 0), need = dailyNeed();
       if (kc) lines.push(`إجمالي السعرات المسجلة: ${kc}${need ? ` من ${Math.round(need.target)}` : ''}`);
       const g = effectiveGroups(r), miss = GROUP_ORDER.filter(k => !g[k]).map(k => GROUPS[k].name);
       lines.push(miss.length ? `ناقصني: ${miss.join('، ')}` : 'أكلي فيه كل المجموعات');
