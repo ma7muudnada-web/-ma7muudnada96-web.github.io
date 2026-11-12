@@ -11,35 +11,37 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="حاسبة الوزن">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#1d2128" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f3f6f5" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f171a" media="(prefers-color-scheme: dark)">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #f6f7f9; --card: #ffffff; --text: #1d2330; --muted: #667085;
-    --line: #e3e6eb; --accent: #2f6fdf; --btn: #2f6fdf;
-    --ok: #1f8a4c; --okbg: #e8f5ee;
-    --warn: #b7791f; --warnbg: #fdf3e3;
+    --bg: #f3f6f5; --card: #ffffff; --text: #16242b; --muted: #5e6e75;
+    --line: #dfe6e4; --accent: #0f7b6c; --btn: #0f7b6c;
+    --mango: #e8952f; --water: #3b8fd9;
+    --ok: #1f8a4c; --okbg: #e6f4ec;
+    --warn: #b06e12; --warnbg: #fdf1df;
     --bad: #c0392b; --badbg: #fbeaea;
-    --info: #2f6fdf; --infobg: #eaf1fd;
-    --soft: #f1f3f6;
+    --info: #0f7b6c; --infobg: #e3f2ef;
+    --soft: #eaf1ef;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #14171c; --card: #1d2128; --text: #e8eaee; --muted: #9aa3b2;
-      --line: #2e3440; --accent: #6b9cf0; --btn: #3a72dc;
-      --ok: #5cc98a; --okbg: #1b3326;
-      --warn: #e5b15a; --warnbg: #3a2e1a;
-      --bad: #ef7d70; --badbg: #3d2220;
-      --info: #6b9cf0; --infobg: #1c2a42;
-      --soft: #252a33;
+      --bg: #0f171a; --card: #172227; --text: #e6eeee; --muted: #93a6ab;
+      --line: #26353b; --accent: #34b5a0; --btn: #12806f;
+      --mango: #f2a541; --water: #5aa7ec;
+      --ok: #5cc98a; --okbg: #17302a;
+      --warn: #e9b25e; --warnbg: #352a17;
+      --bad: #ef7d70; --badbg: #3a2220;
+      --info: #34b5a0; --infobg: #15302c;
+      --soft: #1e2c31;
     }
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html { -webkit-text-size-adjust: 100%; }
   body {
-    margin: 0; font-family: "Cairo", system-ui, sans-serif;
+    margin: 0; font-family: "IBM Plex Sans Arabic", system-ui, sans-serif;
     background: var(--bg); color: var(--text);
     display: flex; justify-content: center; padding: 32px 16px 110px;
   }
@@ -101,9 +103,9 @@
   .range { font-size: 14px; color: var(--muted); margin: 0; }
   #scaleBox { display: flex; justify-content: center; margin: 6px 0 4px; }
   #gauge { width: 230px; max-width: 100%; height: auto; direction: ltr; }
-  #gauge .lbl { font-size: 11px; fill: var(--muted); font-family: "Cairo", sans-serif; }
-  #gauge .val { font-size: 34px; font-weight: 700; fill: var(--text); font-family: "Cairo", sans-serif; }
-  #gauge .cap { font-size: 12px; fill: var(--muted); font-family: "Cairo", sans-serif; }
+  #gauge .lbl { font-size: 11px; fill: var(--muted); font-family: "IBM Plex Sans Arabic", sans-serif; }
+  #gauge .val { font-size: 34px; font-weight: 700; fill: var(--text); font-family: "IBM Plex Sans Arabic", sans-serif; }
+  #gauge .cap { font-size: 12px; fill: var(--muted); font-family: "IBM Plex Sans Arabic", sans-serif; }
   #gauge #dot { fill: var(--card); stroke: var(--text); stroke-width: 4; }
 
   .cal { margin-top: 14px; border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: none; }
@@ -151,7 +153,7 @@
   .stat .num.down { color: var(--ok); } .stat .num.up { color: var(--warn); }
   .chart-box { border: 1px solid var(--line); border-radius: 12px; padding: 10px 6px 4px; margin-bottom: 16px; }
   #chart { width: 100%; height: auto; display: block; direction: ltr; }
-  #chart text { font-family: "Cairo", sans-serif; font-size: 10px; fill: var(--muted); }
+  #chart text { font-family: "IBM Plex Sans Arabic", sans-serif; font-size: 10px; fill: var(--muted); }
   .legend { display: flex; gap: 14px; justify-content: center; font-size: 12px; color: var(--muted); padding: 2px 0 6px; }
   .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; vertical-align: middle; margin-left: 4px; }
   .entries { list-style: none; margin: 0; padding: 0; }
@@ -221,12 +223,12 @@
   /* ---- water & exercise ---- */
   .water { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   .wbtn { width: 56px; height: 56px; border-radius: 50%; border: 1.5px solid var(--line); background: var(--bg); color: var(--text); font-size: 28px; line-height: 1; cursor: pointer; }
-  .wbtn.plus { background: var(--btn); border-color: var(--btn); color: #fff; }
+  .wbtn.plus { background: var(--water); border-color: var(--water); color: #fff; }
   .wbtn:active { transform: scale(0.95); }
   .wmid { text-align: center; flex: 1; }
   .wmid b { display: block; font-size: 34px; line-height: 1.1; }
   .wmid span { font-size: 13px; color: var(--muted); }
-  #waterBar { background: #4f9de0; }
+  #waterBar { background: var(--water); }
   .ex { display: flex; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
   .ex:last-child { border-bottom: none; }
   .ex .en { flex: 1; } .ex .en small { display: block; color: var(--muted); font-size: 12px; }
@@ -242,6 +244,78 @@
   .tips li:last-child { border-bottom: none; }
   .tips .ic { font-size: 18px; line-height: 1.4; }
   .tips small { display: block; color: var(--muted); font-size: 13px; }
+
+
+  /* ===== redesign: shared refinements ===== */
+  body { font-feature-settings: "tnum" 1; }
+  h1 { letter-spacing: 0; }
+  .block { border-radius: 18px; }
+  .tab { gap: 3px; }
+  .tab svg { width: 40px; height: 26px; padding: 2px 8px; border-radius: 999px; transition: background .15s; }
+  .tab.on svg { background: var(--soft); }
+  .tab.on { color: var(--accent); }
+
+  /* ===== today ===== */
+  .hello { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 18px; }
+  .hello h1 { margin: 0; }
+  .hello span { color: var(--muted); font-size: 14px; }
+  .hero { background: var(--soft); border-radius: 26px; padding: 18px 16px 16px; margin-bottom: 14px; }
+  .ring-wrap { position: relative; width: 210px; height: 210px; margin: 0 auto; }
+  .ring-wrap svg { width: 100%; height: 100%; transform: rotate(-90deg) scaleX(-1); }
+  .ring-track { fill: none; stroke: var(--line); stroke-width: 16; }
+  .ring-val { fill: none; stroke: var(--mango); stroke-width: 16; stroke-linecap: round; transition: stroke-dashoffset .6s ease; }
+  .ring-val.over { stroke: var(--bad); }
+  .ring-c { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+  .ring-c b { font-size: 44px; font-weight: 700; line-height: 1; }
+  .ring-c span { font-size: 14px; color: var(--muted); margin-top: 6px; }
+  .ring-c em { font-style: normal; font-size: 13px; font-weight: 600; color: var(--accent); margin-top: 4px; }
+  .minis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; }
+  .mini { background: var(--card); border: none; border-radius: 16px; padding: 10px 6px; text-align: center; font: inherit; color: var(--text); cursor: pointer; }
+  .mini .ml { font-size: 12px; color: var(--muted); display: flex; align-items: center; justify-content: center; gap: 4px; }
+  .mini .ml i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .mini .mv { font-size: 19px; font-weight: 700; margin-top: 2px; }
+  .mini .mv small { font-size: 12px; font-weight: 400; color: var(--muted); }
+  .quick { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+  .qbtn { border: none; border-radius: 16px; padding: 14px 6px; font: inherit; font-size: 16px; font-weight: 700; cursor: pointer; color: #fff; background: var(--btn); transition: transform .08s; }
+  .qbtn:active { transform: scale(0.97); }
+  .qbtn.water { background: var(--water); }
+  .qbtn.weight { background: var(--card); color: var(--text); border: 1.5px solid var(--line); }
+  .wcard { border: 1px solid var(--line); border-radius: 20px; padding: 14px 16px; margin-bottom: 14px; display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; cursor: pointer; background: var(--card); width: 100%; font: inherit; color: var(--text); text-align: right; }
+  .wcard .wv { font-size: 30px; font-weight: 700; line-height: 1.1; }
+  .wcard .wv small { font-size: 14px; font-weight: 500; color: var(--muted); }
+  .bchip { display: inline-block; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; margin-top: 4px; }
+  .bchip.ok { background: var(--okbg); color: var(--ok); } .bchip.warn { background: var(--warnbg); color: var(--warn); } .bchip.bad { background: var(--badbg); color: var(--bad); } .bchip.info { background: var(--infobg); color: var(--info); }
+  .spark { width: 120px; height: 48px; direction: ltr; }
+  .wgoal { grid-column: 1 / -1; margin-top: 8px; font-size: 13px; color: var(--muted); }
+  .wgoal .bar { margin: 0 0 6px; height: 7px; }
+  .tcard { border: 1px solid var(--line); border-radius: 20px; padding: 14px 16px; margin-bottom: 14px; background: var(--card); }
+  .tcard h2 { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+  .tcard h2 .linkbtn { font-size: 14px; }
+  .tmeal { display: flex; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 15px; align-items: baseline; }
+  .tmeal:last-child { border-bottom: none; }
+  .tmeal b { font-size: 13px; color: var(--muted); font-weight: 600; min-width: 38px; }
+  .tmeal span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tmeal em { font-style: normal; font-weight: 700; font-size: 14px; white-space: nowrap; }
+  .ttip { display: flex; gap: 10px; font-size: 15px; line-height: 1.6; }
+  .ttip .ic { font-size: 20px; }
+  .welcome { text-align: center; padding: 26px 8px; }
+  .welcome b { display: block; font-size: 22px; margin-bottom: 8px; }
+  .welcome p { color: var(--muted); margin: 0 0 18px; }
+
+  /* ===== sheet & toast ===== */
+  .sheet-bg { position: fixed; inset: 0; background: rgba(8, 14, 16, .45); z-index: 40; display: none; }
+  .sheet-bg.on { display: block; }
+  .sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 41; background: var(--card); border-radius: 24px 24px 0 0; padding: 10px 18px calc(22px + env(safe-area-inset-bottom)); transform: translateY(105%); visibility: hidden; transition: transform .25s ease, visibility 0s .25s; max-width: 520px; margin: 0 auto; }
+  .sheet.on { transform: none; visibility: visible; transition: transform .25s ease, visibility 0s; }
+  .sheet .grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line); margin: 0 auto 14px; }
+  .sheet h2 { margin-bottom: 12px; }
+  .toast { position: fixed; left: 50%; bottom: calc(86px + env(safe-area-inset-bottom)); transform: translate(-50%, 20px); background: var(--text); color: var(--card); padding: 10px 18px; border-radius: 999px; font-size: 14px; font-weight: 600; z-index: 50; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; white-space: nowrap; }
+  .toast.on { opacity: 1; transform: translate(-50%, 0); }
+
+  /* collapsible meal breakdown */
+  .bdbtn { background: none; border: none; color: var(--accent); font: inherit; font-size: 12px; font-weight: 600; padding: 2px 0 0; cursor: pointer; display: block; }
+  .meal .bd { display: none; } .meal.open .bd { display: block; }
+  @media (prefers-reduced-motion: reduce) { .sheet, .ring-val, .toast, .result.show, .cal.show { transition: none; animation: none; } }
 
   @media (max-width: 520px) {
     body { padding: 0 0 90px; background: var(--card); }
@@ -264,8 +338,60 @@
 <div class="card">
 
   <!-- Home -->
-  <section class="view on" id="v-home">
-    <h1>حاسبة الوزن الطبيعي</h1>
+  <!-- Today -->
+  <section class="view on" id="v-today">
+    <div class="hello"><h1 id="helloT"></h1><span id="helloD"></span></div>
+
+    <div id="tWelcome" class="welcome" style="display:none">
+      <b>أهلًا بيك</b>
+      <p>اكتب طولك وسنك مرة واحدة، وبعدها سجّل أكلك ومية ووزنك من هنا.</p>
+      <button class="primary" type="button" data-go="profile">ابدأ</button>
+    </div>
+
+    <div id="tMain" style="display:none">
+      <div class="hero">
+        <div class="ring-wrap">
+          <svg viewBox="0 0 200 200" aria-hidden="true">
+            <circle class="ring-track" cx="100" cy="100" r="84"></circle>
+            <circle class="ring-val" id="ringVal" cx="100" cy="100" r="84"></circle>
+          </svg>
+          <div class="ring-c"><b id="rEaten">0</b><span id="rOf"></span><em id="rLeft"></em></div>
+        </div>
+        <div class="minis">
+          <button class="mini" type="button" data-go="day"><div class="ml"><i style="background:#7e8cc9"></i>النوم</div><div class="mv" id="mSleep">—</div></button>
+          <button class="mini" type="button" id="mWaterBtn"><div class="ml"><i style="background:var(--water)"></i>المية</div><div class="mv" id="mWater">0</div></button>
+          <button class="mini" type="button" data-go="day"><div class="ml"><i style="background:var(--accent)"></i>الرياضة</div><div class="mv" id="mEx">—</div></button>
+        </div>
+      </div>
+
+      <div class="quick">
+        <button class="qbtn" type="button" id="qMeal">+ أكلة</button>
+        <button class="qbtn water" type="button" id="qWater">+ مية</button>
+        <button class="qbtn weight" type="button" id="qWeight">+ وزن</button>
+      </div>
+
+      <button class="wcard" type="button" id="wCard">
+        <div>
+          <div class="wv" id="wNow">—</div>
+          <span class="bchip" id="wChip"></span>
+        </div>
+        <svg class="spark" id="spark" viewBox="0 0 120 48" aria-hidden="true"></svg>
+        <div class="wgoal" id="wGoal"></div>
+      </button>
+
+      <div class="tcard">
+        <h2>أكل النهارده <button class="linkbtn" type="button" data-go="day">كل التفاصيل</button></h2>
+        <div id="tMeals"></div>
+      </div>
+
+      <div class="tcard" id="tTipCard">
+        <div class="ttip"><span class="ic" id="tTipIc"></span><span id="tTip"></span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="v-home">
+    <h1>الحاسبة</h1>
     <p class="sub" id="homeSub">اكتب وزنك واضغط احسب</p>
 
     <div class="seg" id="modeSeg" style="margin-bottom:18px">
@@ -365,7 +491,7 @@
   <!-- Daily diary -->
   <section class="view" id="v-day">
     <h1>يومي</h1>
-    <p class="sub">نومك وأكلك كل يوم. بيتحفظ لوحده أول بأول.</p>
+    <p class="sub">نومك وأكلك ومية ورياضة. بيتحفظ لوحده.</p>
 
     <div class="daybar">
       <button class="nav" type="button" id="dayPrev" aria-label="اليوم اللي قبله">›</button>
@@ -435,7 +561,7 @@
         <button type="button" class="wbtn plus" id="waterPlus" aria-label="زوّد كوباية">+</button>
       </div>
       <div class="bar" style="margin-top:10px"><i id="waterBar"></i></div>
-      <div class="muted" style="margin-top:6px">الكوباية حوالي 240 مل. المية اللي في الشاي والعصير والأكل بتتحسب برضه، وفي الحر أو مع الرياضة محتاج أكتر.</div>
+      <div class="muted" style="margin-top:6px">الكوباية حوالي 240 مل. في الحر أو مع الرياضة اشرب أكتر.</div>
     </div>
 
     <div class="block">
@@ -455,7 +581,7 @@
         <button class="primary" type="button" id="exAdd">إضافة</button>
         <div class="err" id="exErr"></div>
       </details>
-      <p class="note" style="margin-top:10px">الحرق تقديري: معدل التمرين (MET) من Compendium of Physical Activities 2024 × وزنك × المدة. رياضتك المعتادة محسوبة أصلًا في "مستوى النشاط"، فالرقم ده للمعلومة ومش بيتزود على هدف السعرات.</p>
+      <p class="note" style="margin-top:10px">الحرق تقريبي (MET من Compendium 2024 × وزنك × المدة)، ومش بيتزود على هدف السعرات لأن نشاطك محسوب أصلًا.</p>
     </div>
 
     <div class="block" id="adviceBlock">
@@ -463,7 +589,7 @@
       <div class="muted">المجموعات اللي في أكلك (دوس على أي واحدة لو التطبيق غلط فيها):</div>
       <div class="groups" id="groups"></div>
       <ul class="tips" id="tips"></ul>
-      <p class="note" style="margin-top:10px">نصايح عامة مبنية على إرشادات منظمة الصحة العالمية وMyPlate للأكل، وتوصيات النوم للكبار. مش بديل عن أخصائي تغذية أو دكتور.</p>
+      <p class="note" style="margin-top:10px">نصايح عامة من إرشادات منظمة الصحة العالمية وMyPlate. مش بديل عن دكتور.</p>
     </div>
 
     <div class="block">
@@ -589,9 +715,9 @@
 
 <nav class="tabs">
   <div class="tabs-in">
-    <button class="tab on" type="button" data-tab="home">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18a8 8 0 1 1 16 0"/><path d="M12 18l4-6"/></svg>
-      الرئيسية
+    <button class="tab on" type="button" data-tab="today">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"/></svg>
+      النهارده
     </button>
     <button class="tab" type="button" data-tab="day">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></svg>
@@ -601,12 +727,28 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"/><path d="M5 15l4-4 3 3 6-6"/></svg>
       سجلي
     </button>
+    <button class="tab" type="button" data-tab="home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18a8 8 0 1 1 16 0"/><path d="M12 18l4-6"/></svg>
+      الحاسبة
+    </button>
     <button class="tab" type="button" data-tab="profile">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
       بياناتي
     </button>
   </div>
 </nav>
+
+<div class="sheet-bg" id="sheetBg"></div>
+<div class="sheet" id="wSheet" role="dialog" aria-labelledby="wSheetT">
+  <div class="grab"></div>
+  <h2 id="wSheetT">سجّل وزن النهارده</h2>
+  <div class="field">
+    <div class="inwrap"><input id="sheetW" type="number" inputmode="decimal" step="0.1" placeholder="مثلاً 95.5" enterkeyhint="done"><span class="unit">كجم</span></div>
+  </div>
+  <button class="primary" type="button" id="sheetSave">حفظ الوزن</button>
+  <div class="err" id="sheetErr"></div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
   const $ = id => document.getElementById(id);
@@ -627,6 +769,7 @@
     document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.tab === name));
     if (name === 'profile') fillProfileForm();
     if (name === 'home') renderHome();
+    if (name === 'today') renderToday();
     if (name === 'log') renderLog();
     if (name === 'day') renderDay();
     window.scrollTo(0, 0);
@@ -676,7 +819,7 @@
     if (store.set('bmi.profile', p)) { profile = p; } else { memProfile = p; }
     if (document.activeElement) document.activeElement.blur();
     $('psaved').textContent = 'اتحفظ ✓';
-    setTimeout(() => showTab('home'), 500);
+    setTimeout(() => showTab('today'), 500);
   });
 
   // ---------- gauge ----------
@@ -1043,10 +1186,17 @@
       row.querySelector('.mw').textContent = m.what;
       const est = estimateMeal(m.what);
       row.querySelector('.mk').innerHTML = m.k ? `${fmt0(m.k)} <small>سعر</small>` : est.total ? `~${fmt0(est.total)} <small>سعر</small>` : '';
-      if (!m.k && (est.items.length || est.unknown.length)) {
-        const sub = document.createElement('small'); sub.className = 'bd';
-        sub.textContent = (est.items.length ? breakdownText(est) : '') + (est.unknown.length ? `${est.items.length ? ' · ' : ''}مش متحسب: ${est.unknown.join('، ')}` : '');
-        row.querySelector('.mw').appendChild(sub);
+      if (!m.k && est.items.length) {
+        const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'bdbtn'; btn.textContent = 'التفاصيل';
+        const sub = document.createElement('small'); sub.className = 'bd'; sub.style.whiteSpace = 'pre-line';
+        sub.textContent = est.items.map(it => `${fmtQ(it.q)} × ${it.f.n}: ${fmt0(it.q * it.f.c)}`).join('\n');
+        btn.addEventListener('click', () => { row.classList.toggle('open'); btn.textContent = row.classList.contains('open') ? 'إخفاء' : 'التفاصيل'; });
+        row.querySelector('.mw').append(btn, sub);
+      }
+      if (!m.k && est.unknown.length) {
+        const w = document.createElement('small'); w.className = 'muted'; w.style.display = 'block'; w.style.color = 'var(--warn)';
+        w.textContent = `مش متحسب: ${est.unknown.join('، ')}`;
+        row.querySelector('.mw').appendChild(w);
       }
       const del = row.querySelector('.del'); let tm;
       del.addEventListener('click', () => {
@@ -1634,12 +1784,141 @@
     revealResult();
   }
 
+  // ---------- today dashboard ----------
+  let toastT;
+  function toast(msg) {
+    const t = $('toast'); t.textContent = msg; t.classList.add('on');
+    clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 1800);
+  }
+  const RING_C = 2 * Math.PI * 84;
+  function bmiClass(b) { return b < 18.5 ? ['warn', 'نحافة'] : b < 25 ? ['ok', 'طبيعي'] : b < 30 ? ['warn', 'زيادة وزن'] : ['bad', 'سمنة']; }
+  function renderSpark(log) {
+    const svg = $('spark'); svg.innerHTML = '';
+    const pts = log.slice(-10); if (pts.length < 2) return;
+    const ws = pts.map(e => e.w), lo = Math.min(...ws), hi = Math.max(...ws), span = hi - lo || 1;
+    const xy = pts.map((e, i) => [4 + i * (112 / (pts.length - 1)), 6 + (hi - e.w) / span * 36]);
+    const pl = document.createElementNS(NS, 'polyline');
+    pl.setAttribute('points', xy.map(p => p.join(',')).join(' '));
+    pl.setAttribute('fill', 'none'); pl.setAttribute('stroke', 'var(--accent)'); pl.setAttribute('stroke-width', '2.5');
+    pl.setAttribute('stroke-linecap', 'round'); pl.setAttribute('stroke-linejoin', 'round');
+    svg.appendChild(pl);
+    const last = xy[xy.length - 1], c = document.createElementNS(NS, 'circle');
+    c.setAttribute('cx', last[0]); c.setAttribute('cy', last[1]); c.setAttribute('r', '4'); c.setAttribute('fill', 'var(--accent)');
+    svg.appendChild(c);
+  }
+  function topTip(r, need, total) {
+    const p = profile || memProfile, h = new Date().getHours(), sm = sleepMinutes(r);
+    if (r.meals.length) {
+      const g = effectiveGroups(r);
+      if (!g.veg && !g.fruit) return ['🥗', 'لسه ما أكلتش خضار ولا فاكهة النهارده. ضيف سلطة أو تفاحة.'];
+      if (!g.veg) return ['🥗', 'ناقصك خضار النهارده: سلطة، خيار وطماطم، أو كوسة.'];
+      if (!g.fruit) return ['🍎', 'ناقصك فاكهة النهارده: تفاحة، موزة، برتقانة، أو جوافة.'];
+    }
+    if (sm !== null && sm < 420 && p && p.a >= 18) return ['😴', `نمت ${hm(sm)} بس. الكبار محتاجين 7 ساعات أو أكتر.`];
+    if (h >= 14 && (r.water || 0) < waterTarget() / 2) return ['💧', `شربت ${r.water ? cups(r.water) : 'مية قليلة'} لحد دلوقتي. الهدف حوالي ${cups(waterTarget())}.`];
+    if (need && total > need.target + 200) return ['⚖️', `عديت ${need.label} بحوالي ${fmt0(total - need.target)} سعر.`];
+    if (!r.meals.length) return ['🍽️', 'سجّل أول أكلة النهارده عشان أحسبلك السعرات.'];
+    return ['✅', 'يومك ماشي كويس. كمّل.'];
+  }
+  function renderToday() {
+    const now = new Date(), p = profile || memProfile;
+    $('helloT').textContent = now.getHours() < 12 ? 'صباح الخير' : 'مساء الخير';
+    $('helloD').textContent = `${DAY_NAMES[now.getDay()]} ${dShow(todayISO())}`;
+    $('tWelcome').style.display = p ? 'none' : '';
+    $('tMain').style.display = p ? '' : 'none';
+    if (!p) return;
+    const r = dayRec(todayISO());
+    const total = r.meals.reduce((s, m) => s + mealKcal(m), 0), need = dailyNeed();
+    // ring
+    $('rEaten').textContent = fmt0(total);
+    const ring = $('ringVal');
+    ring.style.strokeDasharray = RING_C;
+    if (need) {
+      const pct = total / need.target;
+      ring.style.strokeDashoffset = RING_C * (1 - Math.min(pct, 1));
+      ring.classList.toggle('over', pct > 1.05);
+      $('rOf').textContent = `من ${fmt0(need.target)} سعر`;
+      $('rLeft').textContent = pct > 1 ? `عديت بـ ${fmt0(total - need.target)}` : `فاضل ${fmt0(need.target - total)}`;
+    } else {
+      ring.style.strokeDashoffset = RING_C; $('rOf').textContent = 'سعر النهارده'; $('rLeft').textContent = p.a < 18 ? '' : 'سجّل وزنك عشان أحسب هدفك';
+    }
+    // minis
+    const sm = sleepMinutes(r);
+    $('mSleep').innerHTML = sm !== null ? `${hmShort(sm)} <small>س</small>` : '—';
+    $('mWater').innerHTML = `${r.water || 0} <small>/ ${waterTarget()}</small>`;
+    const exMin = r.ex.reduce((s, x) => s + x.min, 0);
+    $('mEx').innerHTML = exMin ? `${exMin} <small>د</small>` : '—';
+    // weight
+    const log = getLog(), cw = currentWeight();
+    if (cw > 0) {
+      const bmi = cw / (p.h / 100) ** 2, [cls, lbl] = bmiClass(bmi);
+      $('wNow').innerHTML = `${fmt(cw)} <small>كجم</small>`;
+      $('wChip').className = 'bchip ' + (p.a < 18 ? 'info' : cls);
+      $('wChip').textContent = p.a < 18 ? `BMI ${fmt(bmi)}` : `${lbl} · BMI ${fmt(bmi)}`;
+    } else { $('wNow').innerHTML = '<small>سجّل وزنك</small>'; $('wChip').className = 'bchip'; $('wChip').textContent = ''; }
+    renderSpark(log);
+    if (p.goal && cw > 0 && p.a >= 18) {
+      const start = log.length ? log[0].w : cw, lose = p.goal < start || (p.goal === start && cw > p.goal);
+      const rem = lose ? cw - p.goal : p.goal - cw, span = Math.abs(start - p.goal) || 1;
+      const done = Math.min(Math.max((lose ? start - cw : cw - start) / span, 0), 1);
+      $('wGoal').innerHTML = `<div class="bar"><i style="width:${done * 100}%"></i></div>${rem <= 0 ? 'وصلت لهدفك 🎉' : `فاضل ${fmt(rem)} كجم لهدفك (${fmt(p.goal)})`}`;
+    } else if (log.length >= 2) {
+      const d = log[log.length - 1].w - log[0].w;
+      $('wGoal').textContent = `من أول تسجيل: ${d < 0 ? 'نزلت' : d > 0 ? 'زدت' : 'ثابت'} ${d ? fmt(Math.abs(d)) + ' كجم' : ''}`;
+    } else $('wGoal').textContent = '';
+    // meals
+    const box = $('tMeals'); box.innerHTML = '';
+    const meals = r.meals.slice().sort((a, b) => (a.t || '99') < (b.t || '99') ? -1 : 1);
+    if (!meals.length) box.innerHTML = '<div class="muted" style="padding:4px 0">لسه ما سجلتش أكل النهارده.</div>';
+    meals.forEach(m => {
+      const row = document.createElement('div'); row.className = 'tmeal';
+      row.innerHTML = '<b></b><span></span><em></em>';
+      row.children[0].textContent = m.type; row.children[1].textContent = m.what;
+      const k = mealKcal(m); row.children[2].textContent = k ? `${m.k > 0 ? '' : '~'}${fmt0(k)}` : '';
+      box.appendChild(row);
+    });
+    const [ic, tip] = topTip(r, need, total);
+    $('tTipIc').textContent = ic; $('tTip').textContent = tip;
+  }
+
+  // quick actions
+  function addWaterToday() {
+    const rec = dayRec(todayISO()); rec.water = Math.min(40, (rec.water || 0) + 1); saveRec(todayISO(), rec);
+    renderToday(); toast(`💧 ${cups(rec.water)}`);
+  }
+  $('qWater').addEventListener('click', addWaterToday);
+  $('mWaterBtn').addEventListener('click', addWaterToday);
+  $('qMeal').addEventListener('click', () => {
+    curDay = todayISO(); showTab('day');
+    $('mealBox').open = true; resetMealForm();
+    setTimeout(() => { try { $('mealBox').scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (_) {} $('mealWhat').focus(); }, 150);
+  });
+  function openSheet() {
+    $('sheetErr').textContent = ''; $('sheetW').value = currentWeight() || '';
+    $('sheetBg').classList.add('on'); $('wSheet').classList.add('on');
+    setTimeout(() => $('sheetW').focus(), 250);
+  }
+  function closeSheet() { $('sheetBg').classList.remove('on'); $('wSheet').classList.remove('on'); if (document.activeElement) document.activeElement.blur(); }
+  $('qWeight').addEventListener('click', openSheet);
+  $('wCard').addEventListener('click', openSheet);
+  $('sheetBg').addEventListener('click', closeSheet);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
+  function saveSheet() {
+    const w = parseFloat($('sheetW').value);
+    if (!(w >= 10 && w <= 400)) { $('sheetErr').textContent = 'اكتب الوزن بالكيلو (مثلاً 95.5).'; return; }
+    upsert(todayISO(), w); store.set('bmi.lastWeight', w);
+    closeSheet(); renderToday(); toast(`اتسجل ${fmt(w)} كجم ✓`);
+  }
+  $('sheetSave').addEventListener('click', saveSheet);
+  $('sheetW').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); saveSheet(); } });
+
   // ---------- offline support ----------
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
   }
 
   renderHome();
+  renderToday();
 </script>
 </body>
 </html>
