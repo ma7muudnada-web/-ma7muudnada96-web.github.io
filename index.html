@@ -218,6 +218,20 @@
   .days li span:last-child { color: var(--muted); }
   .tab { font-size: 11px; }
 
+  /* ---- water & exercise ---- */
+  .water { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .wbtn { width: 56px; height: 56px; border-radius: 50%; border: 1.5px solid var(--line); background: var(--bg); color: var(--text); font-size: 28px; line-height: 1; cursor: pointer; }
+  .wbtn.plus { background: var(--btn); border-color: var(--btn); color: #fff; }
+  .wbtn:active { transform: scale(0.95); }
+  .wmid { text-align: center; flex: 1; }
+  .wmid b { display: block; font-size: 34px; line-height: 1.1; }
+  .wmid span { font-size: 13px; color: var(--muted); }
+  #waterBar { background: #4f9de0; }
+  .ex { display: flex; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+  .ex:last-child { border-bottom: none; }
+  .ex .en { flex: 1; } .ex .en small { display: block; color: var(--muted); font-size: 12px; }
+  .ex .ek { font-weight: 700; white-space: nowrap; font-size: 14px; }
+
   /* ---- daily advice ---- */
   .groups { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 12px; }
   .grp { border: 1px dashed var(--line); background: transparent; color: var(--muted); border-radius: 999px; padding: 5px 12px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
@@ -411,6 +425,37 @@
         <table class="foods-tbl" id="foodsTbl"></table>
         <p>الأرقام من وزارة الزراعة الأمريكية (USDA): جدول Nutritive Value of Foods وقاعدة FoodData Central. اللي عليه * أنا حسبته منهم لكمية مختلفة. الأرقام تقريبية وبتختلف حسب الطبخ والحجم.</p>
       </details>
+    </div>
+
+    <div class="block">
+      <h2>المية <small id="waterTarget"></small></h2>
+      <div class="water">
+        <button type="button" class="wbtn" id="waterMinus" aria-label="شيل كوباية">−</button>
+        <div class="wmid"><b id="waterCount">0</b><span id="waterMl"></span></div>
+        <button type="button" class="wbtn plus" id="waterPlus" aria-label="زوّد كوباية">+</button>
+      </div>
+      <div class="bar" style="margin-top:10px"><i id="waterBar"></i></div>
+      <div class="muted" style="margin-top:6px">الكوباية حوالي 240 مل. المية اللي في الشاي والعصير والأكل بتتحسب برضه، وفي الحر أو مع الرياضة محتاج أكتر.</div>
+    </div>
+
+    <div class="block">
+      <h2>الرياضة <small id="exSum"></small></h2>
+      <div id="exList"></div>
+      <details class="box" id="exBox">
+        <summary>+ أضف تمرين</summary>
+        <div class="field" style="margin-top:12px">
+          <label for="exType">نوع التمرين</label>
+          <select id="exType"></select>
+        </div>
+        <div class="field">
+          <label for="exMin">المدة</label>
+          <div class="inwrap"><input id="exMin" type="number" inputmode="numeric" step="1" placeholder="30"><span class="unit">دقيقة</span></div>
+        </div>
+        <div class="est" id="exEst"></div>
+        <button class="primary" type="button" id="exAdd">إضافة</button>
+        <div class="err" id="exErr"></div>
+      </details>
+      <p class="note" style="margin-top:10px">الحرق تقديري: معدل التمرين (MET) من Compendium of Physical Activities 2024 × وزنك × المدة. رياضتك المعتادة محسوبة أصلًا في "مستوى النشاط"، فالرقم ده للمعلومة ومش بيتزود على هدف السعرات.</p>
     </div>
 
     <div class="block" id="adviceBlock">
@@ -784,7 +829,9 @@
       const ref = before.length ? before[before.length - 1].w : inW[0].w;
       if (before.length || inW.length >= 2) wChange = inW[inW.length - 1].w - ref;
     }
-    return { startIso, endIso, any: keys.length > 0 || inW.length > 0,
+    const exEq = recs.reduce((s, r) => s + exModEq(r), 0), exDays = recs.filter(r => r.ex.length).length;
+    const waterDays = recs.filter(r => r.water > 0), water = waterDays.length ? waterDays.reduce((s, r) => s + r.water, 0) / waterDays.length : null;
+    return { startIso, endIso, any: keys.length > 0 || inW.length > 0, exEq, exDays, water,
       sleep: sleeps.length ? sleeps.reduce((a, b) => a + b, 0) / sleeps.length : null, sleepN: sleeps.length,
       kcal: kcalDays.length ? kcalDays.reduce((a, b) => a + b, 0) / kcalDays.length : null, kcalN: kcalDays.length,
       mealDays, vf, wChange };
@@ -809,7 +856,7 @@
       if (c < -1) add('⚠️', 'نزلت أكتر من كيلو في أسبوع. المعدل اللي بيعتبروه آمن ومستمر من نص كيلو لكيلو في الأسبوع، فما تستعجلش.');
     } else add('⚖️', 'سجّل وزنك مرة على الأقل في الأسبوع عشان تشوف التغيير.');
 
-    if (cur.mealDays < 7) add('🗓️', `سجلت أكلك في ${cur.mealDays} من 7 أيام. كل ما تسجل أكتر، الملخص يبقى أدق.`);
+    if (cur.mealDays < 7) add('🗓️', cur.mealDays ? `سجلت أكلك في ${cur.mealDays} من 7 أيام. كل ما تسجل أكتر، الملخص يبقى أدق.` : 'ما سجلتش أكل في آخر 7 أيام. سجّل أكلك في "يومي" عشان الملخص يبقى كامل.');
     else add('🗓️', 'سجلت أكلك كل أيام الأسبوع. ممتاز.');
 
     if (cur.sleep !== null && p && p.a >= 18) {
@@ -825,6 +872,11 @@
       else if (Math.abs(d) <= 150) add('👌', `متوسط سعراتك قريب من ${need.label} (${fmt0(need.target)}).`);
       else add('📊', `متوسط سعراتك ${d > 0 ? 'أعلى' : 'أقل'} من ${need.label} بحوالي ${fmt0(Math.abs(d))} سعر في اليوم.`);
     }
+    if (p && p.a >= 18) {
+      if (cur.exEq >= 150) add('🏃', `اتمرنت ما يعادل ${mns(cur.exEq)} نشاط متوسط الأسبوع ده. ده جوه توصية منظمة الصحة العالمية (150 لـ 300 دقيقة في الأسبوع).`);
+      else add('🏃', `${cur.exEq ? `اتمرنت ما يعادل ${mns(cur.exEq)} نشاط متوسط` : 'ما سجلتش رياضة'} الأسبوع ده. منظمة الصحة العالمية بتنصح بـ 150 دقيقة على الأقل في الأسبوع، يعني حوالي 22 دقيقة في اليوم، زي المشي السريع.`);
+    }
+    if (cur.water !== null) add('💧', `متوسط المية: حوالي ${cups(Math.round(cur.water * 10) / 10)} في اليوم${cur.water < waterTarget() ? ` من ${waterTarget()}` : ''}.`);
     if (cur.mealDays && cur.vf < cur.mealDays) add('🥗', cur.vf ? `أكلت خضار وفاكهة مع بعض في ${count(cur.vf, 'يوم واحد', 'يومين', 'أيام')} بس من ${cur.mealDays}. حاول يبقوا في أكلك كل يوم.` : 'ما أكلتش خضار وفاكهة مع بعض في أي يوم سجلته. حاول يبقوا في أكلك كل يوم.');
   }
 
@@ -916,8 +968,8 @@
   const DAY_NAMES = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
   const shiftDay = (iso, n) => { const t = new Date(iso + 'T12:00:00'); t.setDate(t.getDate() + n); return `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`; };
   const dayTitle = iso => iso === todayISO() ? 'النهارده' : iso === shiftDay(todayISO(), -1) ? 'امبارح' : DAY_NAMES[new Date(iso + 'T12:00:00').getDay()];
-  const dayRec = iso => { const r = getDays()[iso] || {}; return { sleep: r.sleep || '', wake: r.wake || '', meals: Array.isArray(r.meals) ? r.meals : [], note: r.note || '', groups: r.groups && typeof r.groups === 'object' ? r.groups : {} }; };
-  const isEmptyRec = r => !r.sleep && !r.wake && !r.meals.length && !r.note && !Object.keys(r.groups || {}).length;
+  const dayRec = iso => { const r = getDays()[iso] || {}; return { sleep: r.sleep || '', wake: r.wake || '', meals: Array.isArray(r.meals) ? r.meals : [], note: r.note || '', groups: r.groups && typeof r.groups === 'object' ? r.groups : {}, water: r.water > 0 ? r.water : 0, ex: Array.isArray(r.ex) ? r.ex : [] }; };
+  const isEmptyRec = r => !r.sleep && !r.wake && !r.meals.length && !r.note && !Object.keys(r.groups || {}).length && !r.water && !(r.ex || []).length;
   function saveRec(iso, rec) {
     const all = getDays();
     if (isEmptyRec(rec)) delete all[iso]; else all[iso] = rec;
@@ -1017,6 +1069,7 @@
     $('kTarget').textContent = need ? `${need.label}: ${fmt0(need.target)} سعر · فاضل ${fmt0(Math.max(need.target - total, 0))}` : '';
     $('kBarWrap').style.display = withK.length && need ? '' : 'none';
     if (need) { const pct = total / need.target * 100; $('kBar').style.width = Math.min(pct, 100) + '%'; $('kBar').classList.toggle('over', pct > 100); }
+    renderWater(r); renderEx(r);
     renderAdvice(r, sm, meals, withK.length ? total : null, need);
     $('kNote').textContent = missing && withK.length ? `فيه ${missing === 1 ? 'أكلة' : mealsN(missing)} فيها حاجات التطبيق مش عارف سعراتها، فالإجمالي أقل من الحقيقي. اكتب السعرات بإيدك لو تعرفها.` : '';
     renderPastDays();
@@ -1192,6 +1245,94 @@
   const mealKcal = m => m.k > 0 ? m.k : estimateMeal(m.what).total;
   const breakdownText = est => est.items.map(it => `${fmtQ(it.q)} ${it.f.n} = ${fmt0(it.q * it.f.c)}`).join('، ');
 
+  // ---------- water ----------
+  // Beverage target: ~13 cups (men) / ~9 cups (women) per Mayo Clinic; 8 cups if sex unknown
+  const cups = n => Number.isInteger(n) ? count(n, 'كوباية', 'كوبايتين', 'كوبايات') : `${fmt(n)} كوباية`;
+  function waterTarget() { const p = profile || memProfile; return p && p.a >= 18 ? (p.sex === 'f' ? 9 : 13) : 8; }
+  function renderWater(r) {
+    const t = waterTarget(), n = r.water || 0;
+    $('waterCount').textContent = n;
+    $('waterMl').textContent = `${n === 1 ? 'كوباية' : n === 2 ? 'كوبايتين' : n >= 3 && n <= 10 ? 'كوبايات' : 'كوباية'} (حوالي ${fmt(n * 0.24)} لتر)`;
+    $('waterTarget').textContent = `الهدف حوالي ${cups(t)}`;
+    $('waterBar').style.width = Math.min(n / t * 100, 100) + '%';
+    $('waterMinus').disabled = n <= 0;
+  }
+  const setWater = d => { const rec = dayRec(curDay); rec.water = Math.max(0, Math.min(40, (rec.water || 0) + d)); saveRec(curDay, rec); renderDay(); };
+  $('waterPlus').addEventListener('click', () => setWater(1));
+  $('waterMinus').addEventListener('click', () => setWater(-1));
+
+  // ---------- exercise ----------
+  // MET values: 2024 Adult Compendium of Physical Activities (code in c)
+  const EXERCISES = [
+    { id: 'walk', n: 'مشي عادي', m: 3.8, c: '17190' },
+    { id: 'walkb', n: 'مشي سريع', m: 4.8, c: '17200' },
+    { id: 'run8', n: 'جري خفيف (حوالي 8 كم/ساعة)', m: 8.5, c: '12030' },
+    { id: 'run10', n: 'جري (حوالي 10 كم/ساعة)', m: 9.3, c: '12050' },
+    { id: 'run11', n: 'جري سريع (حوالي 11 كم/ساعة)', m: 11.0, c: '12070' },
+    { id: 'bike', n: 'عجلة', m: 7.0, c: '01014' },
+    { id: 'sbike', n: 'عجلة ثابتة (جيم)', m: 6.0, c: '01220' },
+    { id: 'ellip', n: 'إليبتكال', m: 5.0, c: '02048' },
+    { id: 'swim', n: 'سباحة', m: 5.8, c: '18240' },
+    { id: 'weights', n: 'حديد (جيم)', m: 3.5, c: '02054' },
+    { id: 'body', n: 'تمارين وزن الجسم / سيركت', m: 6.0, c: '02032' },
+    { id: 'hiit', n: 'HIIT', m: 7.0, c: '02210' },
+    { id: 'rope', n: 'نط حبل', m: 11.8, c: '15551' },
+    { id: 'stairs', n: 'طلوع سلم', m: 6.8, c: '17131' },
+    { id: 'zumba', n: 'زومبا / رقص', m: 6.5, c: '02310' },
+    { id: 'yoga', n: 'يوجا', m: 2.3, c: '02150' },
+    { id: 'soccer', n: 'كورة قدم', m: 7.0, c: '15610' },
+    { id: 'basket', n: 'كورة سلة', m: 7.5, c: '15055' },
+    { id: 'tennis', n: 'تنس', m: 8.0, c: '15690' },
+    { id: 'pingpong', n: 'بينج بونج', m: 4.0, c: '15660' },
+    { id: 'boxing', n: 'ملاكمة (كيس)', m: 5.8, c: '15110' }
+  ];
+  const exById = id => EXERCISES.find(e => e.id === id);
+  const exKcal = (e, min, w) => w > 0 ? e.m * w * (min / 60) : 0;
+  (function fillExSelect() {
+    EXERCISES.forEach(e => { const o = document.createElement('option'); o.value = e.id; o.textContent = e.n; $('exType').appendChild(o); });
+  })();
+  function updateExEst() {
+    const e = exById($('exType').value), min = parseFloat($('exMin').value), w = currentWeight();
+    $('exEst').innerHTML = e && min > 0 ? (w > 0 ? `حرق تقريبي: <b>~${fmt0(exKcal(e, min, w))} سعر</b> (وزنك ${fmt(w)} كجم)` : 'سجّل وزنك من الرئيسية عشان أحسب الحرق.') : '';
+  }
+  ['exType', 'exMin'].forEach(id => $(id).addEventListener('input', updateExEst));
+  $('exBox').addEventListener('toggle', () => { if ($('exBox').open) { $('exMin').value = ''; $('exErr').textContent = ''; updateExEst(); } });
+  $('exAdd').addEventListener('click', () => {
+    const min = parseFloat($('exMin').value);
+    $('exErr').textContent = '';
+    if (!(min >= 1 && min <= 600)) { $('exErr').textContent = 'اكتب المدة بالدقايق (مثلاً 30).'; return; }
+    const rec = dayRec(curDay);
+    rec.ex.push({ id: Date.now().toString(36), t: $('exType').value, min: Math.round(min) });
+    saveRec(curDay, rec);
+    if (document.activeElement) document.activeElement.blur();
+    $('exBox').open = false; renderDay();
+  });
+  function renderEx(r) {
+    const box = $('exList'); box.innerHTML = '';
+    const w = currentWeight();
+    let totMin = 0, totK = 0;
+    if (!r.ex.length) box.innerHTML = '<div class="muted" style="padding:4px 0 10px">مفيش تمارين متسجلة اليوم ده.</div>';
+    r.ex.forEach(x => {
+      const e = exById(x.t); if (!e) return;
+      const k = exKcal(e, x.min, w); totMin += x.min; totK += k;
+      const row = document.createElement('div'); row.className = 'ex';
+      row.innerHTML = `<div class="en"></div><div class="ek"></div><button class="del" type="button" aria-label="مسح">×</button>`;
+      row.querySelector('.en').innerHTML = `${e.n}<small>${mns(x.min)}</small>`;
+      row.querySelector('.ek').textContent = k ? `~${fmt0(k)} سعر` : '';
+      const del = row.querySelector('.del'); let tm;
+      del.addEventListener('click', () => {
+        if (!del.classList.contains('armed')) {
+          del.classList.add('armed'); del.textContent = 'مسح؟';
+          tm = setTimeout(() => { del.classList.remove('armed'); del.textContent = '×'; }, 3000);
+        } else { clearTimeout(tm); const rec = dayRec(curDay); rec.ex = rec.ex.filter(y => y.id !== x.id); saveRec(curDay, rec); renderDay(); }
+      });
+      box.appendChild(row);
+    });
+    $('exSum').textContent = totMin ? `${mns(totMin)}${totK ? ` · ~${fmt0(totK)} سعر` : ''}` : '';
+  }
+  // moderate-equivalent minutes (WHO: vigorous minutes count double); vigorous = MET >= 6
+  const exModEq = r => r.ex.reduce((s, x) => { const e = exById(x.t); return e && e.m >= 3 ? s + x.min * (e.m >= 6 ? 2 : 1) : s; }, 0);
+
   // ---------- daily advice ----------
   const GROUPS = {
     protein: { name: 'بروتين', words: ['بيض', 'بيضه', 'فراخ', 'فرخه', 'دجاج', 'لحم', 'لحمه', 'كبده', 'سمك', 'تونه', 'جمبري', 'سردين', 'فول', 'عدس', 'حمص', 'فاصوليا', 'لوبيا', 'طعميه', 'فلافل', 'كفته', 'برجر', 'سجق', 'بانيه', 'شاورما', 'ستيك', 'كباب', 'مكسرات', 'لوز', 'سوداني', 'بندق', 'كاجو', 'عين جمل', 'ديك رومي', 'سلمون', 'بروتين'],
@@ -1259,6 +1400,14 @@
       else add('👌', `أكلك قريب من ${need.label}.`);
     }
 
+    // Water
+    const wt = waterTarget(), wn = r.water || 0;
+    if (wn >= wt) add('💧', `شربت ${cups(wn)} مية. كويس.`);
+    else if (isPast || late) add('💧', wn ? `شربت ${cups(wn)} بس من حوالي ${wt}. حاول تشرب أكتر بكرة.` : `ما سجلتش مية النهارده. الهدف حوالي ${cups(wt)}.`);
+    // Exercise
+    const exMin = r.ex.reduce((s, x) => s + x.min, 0);
+    if (exMin) add('🏃', `اتمرنت ${mns(exMin)} النهارده.`);
+
     // Sleep (adult recommendation only)
     if (sm !== null && p && p.a >= 18) {
       if (sm < 420) add('😴', `<b>نمت ${hm(sm)} بس.</b><small>الكبار محتاجين 7 ساعات نوم أو أكتر كل ليلة. حاول تنام بدري شوية وفي معاد ثابت.</small>`);
@@ -1276,6 +1425,8 @@
       if (sm !== null) bits.push('نوم ' + hmShort(sm));
       if (r.meals.length) bits.push(mealsN(r.meals.length));
       if (kc) bits.push(fmt0(kc) + ' سعر');
+      if (r.water) bits.push(cups(r.water) + ' مية');
+      if (r.ex.length) bits.push('رياضة ' + r.ex.reduce((a, x) => a + x.min, 0) + ' د');
       if (!bits.length && r.note) bits.push('ملاحظة');
       const li = document.createElement('li');
       li.innerHTML = `<span>${dayTitle(k)} ${dShow(k)}</span><span>${bits.join(' · ')}</span>`;
@@ -1336,6 +1487,8 @@
       const g = effectiveGroups(r), miss = GROUP_ORDER.filter(k => !g[k]).map(k => GROUPS[k].name);
       lines.push(miss.length ? `ناقصني: ${miss.join('، ')}` : 'أكلي فيه كل المجموعات');
     }
+    if (r.water) lines.push(`المية: ${cups(r.water)}`);
+    if (r.ex.length) lines.push('الرياضة: ' + r.ex.map(x => { const e = exById(x.t); return e ? `${e.n} ${x.min} دقيقة` : ''; }).filter(Boolean).join('، '));
     if (r.note) lines.push('ملاحظات: ' + r.note);
     const txt = lines.join('\n');
     let ok = false;
@@ -1375,6 +1528,8 @@
           meals: Array.isArray(r.meals) ? r.meals.filter(m => m && typeof m.what === 'string').map(m => ({
             id: String(m.id || Math.random().toString(36).slice(2)), type: ['فطار', 'غدا', 'عشا', 'سناك'].includes(m.type) ? m.type : 'سناك',
             t: /^\d{2}:\d{2}$/.test(m.t) ? m.t : '', what: m.what.slice(0, 500), k: m.k > 0 && m.k <= 10000 ? Math.round(m.k) : 0 })) : [],
+          water: r.water > 0 && r.water <= 40 ? Math.round(r.water) : 0,
+          ex: Array.isArray(r.ex) ? r.ex.filter(x => x && exById(x.t) && x.min >= 1 && x.min <= 600).map(x => ({ id: String(x.id || Math.random().toString(36).slice(2)), t: x.t, min: Math.round(x.min) })) : [],
           groups: r.groups && typeof r.groups === 'object' ? Object.fromEntries(Object.entries(r.groups).filter(([g, v]) => GROUP_ORDER.includes(g) && typeof v === 'boolean')) : {}
         };
         nDays++;
