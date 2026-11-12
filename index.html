@@ -445,6 +445,22 @@
       لسه ما سجلتش أي وزن.<br>احسب وزنك من الرئيسية ودوس "سجّل الوزن ده في سجلي"، أو أضف وزن من تحت.
     </div>
 
+    <div class="block" id="goalCard" style="display:none">
+      <h2>هدفك <small id="goalTitle"></small></h2>
+      <div class="bar" style="height:10px;margin:6px 0 10px"><i id="goalBar"></i></div>
+      <div id="goalText" style="font-size:15px;line-height:1.7"></div>
+    </div>
+
+    <div class="block" id="weekCard" style="display:none">
+      <h2>آخر 7 أيام <small id="weekRange"></small></h2>
+      <div class="stats" style="margin-bottom:4px">
+        <div class="stat"><div class="lab">متوسط النوم</div><div class="num" id="wSleep"></div></div>
+        <div class="stat"><div class="lab">متوسط السعرات</div><div class="num" id="wKcal"></div></div>
+        <div class="stat"><div class="lab">أيام فيها خضار وفاكهة</div><div class="num" id="wVF"></div></div>
+      </div>
+      <ul class="tips" id="weekTips"></ul>
+    </div>
+
     <div id="logMain" style="display:none">
       <div class="stats">
         <div class="stat"><div class="lab">البداية</div><div class="num" id="sStart"></div></div>
@@ -514,6 +530,11 @@
         </select>
         <div class="hint">لو محتار بين اختيارين، اختار الأقل. أغلب الناس بتختار نشاط أعلى من الحقيقي.</div>
       </div>
+      <div class="field" id="goalField">
+        <label for="pgoal">الوزن اللي عايز توصله (اختياري)</label>
+        <div class="inwrap"><input id="pgoal" type="number" inputmode="decimal" step="0.1" placeholder="سيبه فاضي لو مش عايز هدف"><span class="unit">كجم</span></div>
+        <div class="hint" id="goalHint"></div>
+      </div>
       <button class="primary" type="submit">حفظ</button>
       <div class="err" id="perr"></div>
       <div class="saved" id="psaved"></div>
@@ -579,10 +600,17 @@
     const p = profile || memProfile;
     $('perr').textContent = ''; $('psaved').textContent = '';
     if (!p) return;
-    $('ph').value = p.h; $('pa').value = p.a; $('pact').value = String(p.act);
+    $('ph').value = p.h; $('pa').value = p.a; $('pact').value = String(p.act); $('pgoal').value = p.goal || '';
     sex = p.sex;
     document.querySelectorAll('#sexSeg button').forEach(x => x.classList.toggle('on', x.dataset.sex === sex));
+    updateGoalHint();
   }
+  function updateGoalHint() {
+    const h = parseFloat($('ph').value), a = parseFloat($('pa').value);
+    $('goalField').style.display = a > 0 && a < 18 ? 'none' : '';
+    $('goalHint').textContent = h >= 50 && h <= 250 ? `الوزن الطبيعي لطول ${fmt(h)} سم: من ${fmt(18.5 * (h / 100) ** 2)} إلى ${fmt(24.9 * (h / 100) ** 2)} كجم.` : '';
+  }
+  ['ph', 'pa'].forEach(id => $(id).addEventListener('input', updateGoalHint));
   $('ph').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('pa').focus(); } });
   $('pa').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('pa').blur(); } });
   $('pf').addEventListener('submit', e => {
@@ -593,6 +621,13 @@
     if (!(a >= 2 && a <= 120)) { $('perr').textContent = 'اكتب السن بالسنين (مثلاً 30).'; return; }
     if (!sex) { $('perr').textContent = 'اختار النوع.'; return; }
     const p = { h, a: Math.round(a), sex, act };
+    const g = parseFloat($('pgoal').value);
+    if ($('pgoal').value.trim() && a >= 18) {
+      const minW = 18.5 * (h / 100) ** 2;
+      if (!(g >= 10 && g <= 400)) { $('perr').textContent = 'اكتب الوزن الهدف بالكيلو، أو سيبه فاضي.'; return; }
+      if (g < minW) { $('perr').textContent = `الهدف ده أقل من الوزن الطبيعي لطولك. أقل وزن طبيعي لطول ${fmt(h)} سم هو ${fmt(minW)} كجم.`; return; }
+      p.goal = Math.round(g * 10) / 10;
+    }
     if (store.set('bmi.profile', p)) { profile = p; } else { memProfile = p; }
     if (document.activeElement) document.activeElement.blur();
     $('psaved').textContent = 'اتحفظ ✓';
@@ -653,6 +688,11 @@
       const d = log[log.length - 1].w - log[0].w;
       $('progressLine').innerHTML = `من أول تسجيل (${dShow(log[0].d)}): <b>${d < 0 ? 'نزلت' : d > 0 ? 'زدت' : 'ثابت'} ${d ? fmt(Math.abs(d)) + ' كجم' : ''}</b>`;
     } else $('progressLine').textContent = '';
+    const cw = currentWeight();
+    if (p.goal && cw > 0 && p.a >= 18) {
+      const rem = Math.abs(cw - p.goal);
+      $('progressLine').innerHTML += `${$('progressLine').innerHTML ? ' · ' : ''}${rem < 0.05 ? 'وصلت لهدفك 🎉' : `فاضلك <b>${fmt(rem)} كجم</b> على هدفك (${fmt(p.goal)})`}`;
+    }
   }
 
   // ---------- log ----------
@@ -695,7 +735,101 @@
     renderLog();
   });
 
+  // ---------- goal weight ----------
+  function currentWeight() {
+    const log = getLog();
+    return log.length ? log[log.length - 1].w : store.get('bmi.lastWeight');
+  }
+  function renderGoal() {
+    const p = profile || memProfile, card = $('goalCard');
+    const cur = currentWeight();
+    if (!p || !p.goal || !(cur > 0) || p.a < 18) { card.style.display = 'none'; return; }
+    card.style.display = '';
+    const log = getLog(), start = log.length ? log[0].w : cur, goal = p.goal;
+    const lose = goal < start || (goal === start && cur > goal);
+    const remaining = lose ? cur - goal : goal - cur;
+    const span = Math.abs(start - goal) || 1;
+    const done = Math.min(Math.max((lose ? start - cur : cur - start) / span, 0), 1);
+    $('goalTitle').textContent = `${fmt(goal)} كجم`;
+    $('goalBar').style.width = (done * 100) + '%';
+    $('goalBar').classList.remove('over');
+    if (remaining <= 0) { $('goalText').innerHTML = '🎉 <b>وصلت لهدفك!</b> لو حابب، حط هدف جديد من "بياناتي".'; return; }
+    const weeks = Math.ceil(remaining / 0.5);
+    const lines = [`فاضلك <b>${fmt(remaining)} كجم</b> ${lose ? 'تنزلهم' : 'تزودهم'}، وعملت ${Math.round(done * 100)}% من الطريق.`,
+      `بمعدل نص كيلو في الأسبوع: حوالي ${weeks} أسبوع، يعني تقريبًا يوم <b>${dShow(shiftDay(todayISO(), weeks * 7))}</b>.`];
+    // real pace from the log, if there is enough history
+    if (log.length >= 2) {
+      const days = (dTime(log[log.length - 1].d) - dTime(log[0].d)) / 86400000;
+      const perWeek = (log[0].w - log[log.length - 1].w) / days * 7 * (lose ? 1 : -1);
+      if (days >= 14 && perWeek > 0.05) {
+        const w2 = Math.ceil(remaining / perWeek);
+        lines.push(`بسرعتك الحالية (${fmt(perWeek)} كجم في الأسبوع): حوالي ${w2} أسبوع، يعني يوم ${dShow(shiftDay(todayISO(), w2 * 7))}.`);
+      }
+    }
+    $('goalText').innerHTML = lines.join('<br>');
+  }
+
+  // ---------- weekly summary ----------
+  function weekStats(endIso) {
+    const startIso = shiftDay(endIso, -6), all = getDays();
+    const keys = Object.keys(all).filter(k => k >= startIso && k <= endIso);
+    const recs = keys.map(k => dayRec(k));
+    const sleeps = recs.map(sleepMinutes).filter(x => x !== null);
+    const kcalDays = recs.filter(r => r.meals.length).map(r => r.meals.reduce((s, m) => s + mealKcal(m), 0)).filter(x => x > 0);
+    const mealDays = recs.filter(r => r.meals.length).length;
+    const vf = recs.filter(r => r.meals.length).filter(r => { const g = effectiveGroups(r); return g.veg && g.fruit; }).length;
+    const log = getLog(), inW = log.filter(e => e.d >= startIso && e.d <= endIso), before = log.filter(e => e.d < startIso);
+    let wChange = null;
+    if (inW.length) {
+      const ref = before.length ? before[before.length - 1].w : inW[0].w;
+      if (before.length || inW.length >= 2) wChange = inW[inW.length - 1].w - ref;
+    }
+    return { startIso, endIso, any: keys.length > 0 || inW.length > 0,
+      sleep: sleeps.length ? sleeps.reduce((a, b) => a + b, 0) / sleeps.length : null, sleepN: sleeps.length,
+      kcal: kcalDays.length ? kcalDays.reduce((a, b) => a + b, 0) / kcalDays.length : null, kcalN: kcalDays.length,
+      mealDays, vf, wChange };
+  }
+  function renderWeek() {
+    const cur = weekStats(todayISO()), prev = weekStats(shiftDay(todayISO(), -7));
+    const card = $('weekCard');
+    if (!cur.any) { card.style.display = 'none'; return; }
+    card.style.display = '';
+    $('weekRange').textContent = `${dShort(cur.startIso)} - ${dShort(cur.endIso)}`;
+    $('wSleep').innerHTML = cur.sleep !== null ? `${hmShort(Math.round(cur.sleep))} <small>ساعة</small>` : '—';
+    $('wKcal').innerHTML = cur.kcal !== null ? `${fmt0(cur.kcal)} <small>سعر</small>` : '—';
+    $('wVF').innerHTML = cur.mealDays ? `${cur.vf} <small>من ${cur.mealDays}</small>` : '—';
+    const ul = $('weekTips'); ul.innerHTML = '';
+    const add = (ic, html) => { const li = document.createElement('li'); li.innerHTML = `<span class="ic">${ic}</span><span>${html}</span>`; ul.appendChild(li); };
+    const p = profile || memProfile, need = dailyNeed();
+
+    if (cur.wChange !== null) {
+      const c = cur.wChange;
+      if (Math.abs(c) < 0.05) add('⚖️', 'وزنك ثابت الأسبوع ده.');
+      else add(c < 0 ? '📉' : '📈', `وزنك ${c < 0 ? 'نزل' : 'زاد'} <b>${fmt(Math.abs(c))} كجم</b> الأسبوع ده.`);
+      if (c < -1) add('⚠️', 'نزلت أكتر من كيلو في أسبوع. المعدل اللي بيعتبروه آمن ومستمر من نص كيلو لكيلو في الأسبوع، فما تستعجلش.');
+    } else add('⚖️', 'سجّل وزنك مرة على الأقل في الأسبوع عشان تشوف التغيير.');
+
+    if (cur.mealDays < 7) add('🗓️', `سجلت أكلك في ${cur.mealDays} من 7 أيام. كل ما تسجل أكتر، الملخص يبقى أدق.`);
+    else add('🗓️', 'سجلت أكلك كل أيام الأسبوع. ممتاز.');
+
+    if (cur.sleep !== null && p && p.a >= 18) {
+      if (cur.sleep < 420) add('😴', `متوسط نومك أقل من 7 ساعات (${hm(Math.round(cur.sleep))}). الكبار محتاجين 7 ساعات أو أكتر.`);
+      if (prev.sleep !== null) {
+        const d = Math.round(cur.sleep - prev.sleep);
+        if (Math.abs(d) >= 15) add(d > 0 ? '🌙' : '🔻', `نومك ${d > 0 ? 'أكتر' : 'أقل'} من الأسبوع اللي فات بحوالي ${hm(Math.abs(d))} في الليلة.`);
+      }
+    }
+    if (cur.kcal !== null && need) {
+      const d = cur.kcal - need.target;
+      if (cur.kcal < need.target * 0.6) add('⚠️', `متوسط السعرات المسجلة (${fmt0(cur.kcal)}) أقل بكتير من احتياجك. لو ده فعلًا اللي بتاكله، الأكل القليل جدًا مش صحي.`);
+      else if (Math.abs(d) <= 150) add('👌', `متوسط سعراتك قريب من ${need.label} (${fmt0(need.target)}).`);
+      else add('📊', `متوسط سعراتك ${d > 0 ? 'أعلى' : 'أقل'} من ${need.label} بحوالي ${fmt0(Math.abs(d))} سعر في اليوم.`);
+    }
+    if (cur.mealDays && cur.vf < cur.mealDays) add('🥗', cur.vf ? `أكلت خضار وفاكهة مع بعض في ${count(cur.vf, 'يوم واحد', 'يومين', 'أيام')} بس من ${cur.mealDays}. حاول يبقوا في أكلك كل يوم.` : 'ما أكلتش خضار وفاكهة مع بعض في أي يوم سجلته. حاول يبقوا في أكلك كل يوم.');
+  }
+
   function renderLog() {
+    renderGoal(); renderWeek();
     const log = getLog();
     $('logEmpty').style.display = log.length ? 'none' : '';
     $('logMain').style.display = log.length ? '' : 'none';
